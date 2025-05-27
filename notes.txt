@@ -1,0 +1,7 @@
+go get github.com/BurntSushi/toml@latest
+
+after running panel add or panel remove "go mod init"
+
+kickfyne screen remove NotUsedScreenName says already removed.
+
+panel state in state folder.

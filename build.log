@@ -1,0 +1,2 @@
+source/frontend/screens/build.go:8:2: no required module provides package github.com/JosephABudd/kickfyne/source/frontend/screens/tabbar; to add it:
+	go get github.com/JosephABudd/kickfyne/source/frontend/screens/tabbar
