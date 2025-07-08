@@ -39,7 +39,7 @@ An app will open with it's default **Hello World** screen. The screen has 2 pane
 
 The two panels are **Hello** and **HelloAgain**. 
 
-![The new application's default opening screen.](images/kickfyne_helloworld_screen.png)
+![The new application's default opening screen.](/images/kickfyne_helloworld_screen.png)
 
 ### Add a simple screen to Edit a contact.
 
@@ -139,22 +139,22 @@ MainMenu = "ContactsAT ContactsDT ContactsAC"
 
 The **ContactsAT** screen is an AppTabs screen. The user can not close an AppTabs tab. The **ContactsAT** screen is shown below with its default panel **Add** displayed.
 
-![The AppTabs screen.](images/kickfyne_contacts_app_tabs_screen.png)
+![The AppTabs screen.](/images/kickfyne_contacts_app_tabs_screen.png)
 
 ### The ContactsDT screen
 
 The **ContactsDT** screen is an DocTabs screen. The **ContactsDT** screen is shown below with its **Edit** tab displayed. The **Edit** tab is using its own instance of the **Edit** screen for content. The **Edit** screen is displaying its default **Select** panel.
 
-![The AppTabs screen.](images/kickfyne_contacts_doc_tabs_screen.png)
+![The AppTabs screen.](/images/kickfyne_contacts_doc_tabs_screen.png)
 
 ### The ContactsAC screen
 
 The **ContactsAC** screen is an Accordion screen. The **ContactsAC** screen is shown below with its **Remove** label opened showing its content. The **Remove** label is using its own instance of the **Remove** screen for content. The **Remove** screen is displaying its default **Select** panel.
 
-![The Accordion screen.](images/kickfyne_contacts_accordion_screen.png)
+![The Accordion screen.](/images/kickfyne_contacts_accordion_screen.png)
 
 ### The main menu
 
 The main menu is at the top left of the app and it is shown open.
 
-![The main menu opened showing the names of the screens shown above.](images/kickfyne_main_menu.png)
+![The main menu opened showing the names of the screens shown above.](/images/kickfyne_main_menu.png)
