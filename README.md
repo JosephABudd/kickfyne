@@ -157,4 +157,4 @@ The **ContactsAC** screen is an Accordion screen. The **ContactsAC** screen is s
 
 The main menu is at the top left of the app and it is shown open.
 
-![The main menu opened showing the names of the screens shown above.](./images/kickfyne_main_menu.png)
+![The main menu opened showing the names of the screens shown above.](blob/main/images/kickfyne_main_menu.png)blob/main/images/kickfyne_contacts_app_tabs_screen.png
