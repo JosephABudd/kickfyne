@@ -23,8 +23,7 @@ import (
 
 	_misc_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/misc"
 	_content_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/panels/{{ .PanelName }}Panel"
-	_txrx_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/txrx"
-	_types_ "example.com/okp/frontend/types"
+	_types_ "{{ .ImportPrefix }}/frontend/types"
 )
 
 
@@ -34,8 +33,8 @@ import (
 type {{ .PanelName }}Panel struct {
 	content   *_content_.Content
 	state     *_content_.State
+	messenger *_content_.Messenger
 	screen    *_misc_.Miscellaneous
-	messenger *_txrx_.Messenger
 }
 
 // New{{ .PanelName }}Panel initializes this panel.
@@ -54,22 +53,37 @@ func New{{ .PanelName }}Panel(screen *_misc_.Miscellaneous) (panel *{{ .PanelNam
 	if panel.content, err = _content_.NewContent(screen); err != nil {
 		return
 	}
-	if panel.state, err = _content_.NewState(panel.content, panel.screen.Layout.Producer().Refresh); err != nil {
+	if panel.state, err = _content_.NewState(panel.content, screen.ScreenID); err != nil {
 		return
 	}
+	panel.messenger, err = _content_.NewMessenger(screen, panel.state)
 
 	return
 }
 
 // SetMessenger does just that.
-func (panel *{{ .PanelName }}Panel) SetMessenger(messenger *_txrx_.Messenger) {
+func (panel *{{ .PanelName }}Panel) SetMessenger(messenger *_content_.Messenger) {
 	panel.messenger = messenger
 }
 
+// ID returns this panel's id. Same as this panel's messenger's id.
+func (panel *{{ .PanelName }}Panel) ID() (id string) {
+	getters := panel.state.Get().(_content_.Getters)
+	id = getters.ID()
+	return
+}
+
 // Show shows this panel and hides the others.
-func (panel *{{ .PanelName }}Panel) Show() {
+func (panel *{{ .PanelName }}Panel) Show(isMainThread bool) {
 	panel.screen.Layout.Set{{ .PanelName }}PanelCanvasObject(panel.content.CanvasObject())
-	panel.screen.Layout.Producer().Refresh()
+	panel.screen.Layout.Producer().Refresh(isMainThread)
+}
+
+// Producer returns the panel's producer.
+// func (panel *{{ .PanelName }}Panel) Producer() (producer *_producer_.ContentProducer) {
+func (panel *{{ .PanelName }}Panel) Producer() (producer _types_.ContentProducer) {
+	producer = panel.screen.Layout.Producer()
+	return
 }
 
 // Returns the panel's state.
@@ -82,6 +96,11 @@ func (panel *{{ .PanelName }}Panel) State() (state _types_.Stater) {
 func (panel *{{ .PanelName }}Panel) CanvasObject() (canvasObject fyne.CanvasObject) {
 	canvasObject = panel.content.CanvasObject()
 	return
+}
+
+// Required cleanup after unbinding.
+func (panel *{{ .PanelName }}Panel) UnBindCleanUP() {
+	panel.messenger.StopReceiving()
 }
 `
 )

@@ -7,7 +7,7 @@ const (
 var chansTemplate = `package message
 
 type MSGer interface {
-	ID() (id uint64)
+	ID() (id string)
 	Name() (name string)
 	FatalError() (fatal bool, message, messengerID string)
 	AsInterface() (msg interface{})
@@ -15,16 +15,9 @@ type MSGer interface {
 
 var FrontEndToBackEnd = make(chan MSGer, 255)
 var BackEndToFrontEnd = make(chan MSGer, 255)
-var messageID uint64
 
-func NextID() (id uint64) {
-	id = messageID
-	messageID++
-	return
-}
-
-func IsValidID(id uint64) (isvalid bool) {
-	isvalid = (id < messageID)
+func IsValidID(id string) (isvalid bool) {
+	isvalid = len(id) > 0
 	return
 }
 

@@ -26,13 +26,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	_misc_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/misc"
+	_producer_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/producer"
 	_types_ "{{ .ImportPrefix }}/frontend/types"
 )
 
 // Content is the content for the {{ .PanelName }} panel.
 // KICKFYNE TODO: Correct this panel's doc comment.
 type Content struct {
-	producer *_types_.PanelContentProducer
+	producer *_producer_.TabItemContentProducer
 	content  fyne.CanvasObject
 	screen   *_misc_.Miscellaneous
 	tabItem  *container.TabItem
@@ -44,7 +45,7 @@ type Content struct {
 
 // NewContent initializes this panel's content.
 // Returns the panel's content and the error.
-func NewContent(tabItemContentConsumer *_types_.DocTabItemContentConsumer, screen *_misc_.Miscellaneous, tabItem *container.TabItem, paneler _types_.Paneler) (panelContent *Content, err error) {
+func NewContent(tabItemContentConsumer *_types_.DocTabsTabItemContentConsumer, screen *_misc_.Miscellaneous, tabItem *container.TabItem, paneler _types_.Paneler) (panelContent *Content, err error) {
 
 	defer func() {
 		if err != nil {
@@ -52,9 +53,11 @@ func NewContent(tabItemContentConsumer *_types_.DocTabItemContentConsumer, scree
 		}
 	}()
 
+	_ = paneler
+
 	// Create the components of this panel's content.
 	panelContent = &Content{
-		producer: _types_.NewPanelContentProducer(false, tabItemContentConsumer, paneler),
+		producer: _producer_.NewTabItemContentProducer(false, tabItemContentConsumer),
 		screen:   screen,
 		tabItem:  tabItem,
 
@@ -77,7 +80,7 @@ func (panelContent *Content) CanvasObject() (canvasObject fyne.CanvasObject) {
 	return
 }
 
-func (panelContent *Content) Producer() (producer *_types_.PanelContentProducer) {
+func (panelContent *Content) Producer() (producer _types_.ContentProducer) {
 	producer = panelContent.producer
 	return
 }

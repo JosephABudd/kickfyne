@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 
+	_api_ "{{ .ImportPrefix }}/backend/txrx/api"
 	_message_ "{{ .ImportPrefix }}/shared/message"
 	_store_ "{{ .ImportPrefix }}/shared/store"
 )
@@ -21,7 +22,7 @@ import (
 const {{ $dCMessageName }}F = "receive{{ .MessageName }}: %s"
 
 func init() {
-	addReceiver(_message_.{{ .MessageName }}ID, receive{{ .MessageName }})
+	_api_.AddReceiver(_message_.{{ .MessageName }}ID, receive{{ .MessageName }})
 }
 
 func receive{{ .MessageName }}(ctx context.Context, ctxCancel context.CancelFunc, stores *_store_.Stores, msg interface{}) {
@@ -33,14 +34,14 @@ func receive{{ .MessageName }}(ctx context.Context, ctxCancel context.CancelFunc
 		case fatal != nil:
 			{{ $dCMessageName }}Msg.Fatal = true
 			{{ $dCMessageName }}Msg.ErrorMessage = fmt.Sprintf({{ $dCMessageName }}F, fatal.Error())
-			Send({{ $dCMessageName }}Msg)
+			_api_.Send({{ $dCMessageName }}Msg)
 		case err != nil:
 			{{ $dCMessageName }}Msg.Error = true
 			{{ $dCMessageName }}Msg.ErrorMessage = fmt.Sprintf({{ $dCMessageName }}F, err.Error())
-			Send({{ $dCMessageName }}Msg)
+			_api_.Send({{ $dCMessageName }}Msg)
 		default:
 			// No errors so return the {{ $dCMessageName }}Msg.
-			Send({{ $dCMessageName }}Msg)
+			_api_.Send({{ $dCMessageName }}Msg)
 		}
 	}()
 

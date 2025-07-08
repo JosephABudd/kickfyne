@@ -150,6 +150,7 @@ func Build(
 	// frontend/screens/simple/«screen-package-name»/panelers/panelers.go
 	fPath = filepath.Join(packagePanelersPath, _panelers_.PanelersFileName)
 	data = &_panelers_.PanelersTemplateData{
+		ImportPrefix:    importPrefix,
 		LocalPanelNames: localPanelNames,
 	}
 	if err = _utils_.ProcessTemplate(_panelers_.PanelersFileName, fPath, _panelers_.PanelersTemplate, data); err != nil {
@@ -214,6 +215,16 @@ func Build(
 			ImportPrefix: importPrefix,
 		}
 		if err = _utils_.ProcessTemplate(fileName, fPath, _panel_.StateTemplate, data); err != nil {
+			return
+		}
+		// messenger.go
+		fPath = filepath.Join(panelFolderPath, _txrx_.MessengerFileName)
+		data = &_panel_.MessengerTemplateData{
+			PackageName:  packageName,
+			PanelName:    panelName,
+			ImportPrefix: importPrefix,
+		}
+		if err = _utils_.ProcessTemplate(_txrx_.MessengerFileName, fPath, _panel_.MessengerTemplate, data); err != nil {
 			return
 		}
 	}

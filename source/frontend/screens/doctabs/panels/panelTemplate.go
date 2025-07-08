@@ -40,7 +40,7 @@ type {{ .PanelName }}Panel struct {
 
 // New{{ .PanelName }}Panel initializes this panel.
 // Returns the panel and the error.
-func New{{ .PanelName }}Panel(screen *_misc_.Miscellaneous, tabItemContentConsumer *_types_.DocTabItemContentConsumer, tabItem *container.TabItem) (panel *{{ .PanelName }}Panel, err error) {
+func New{{ .PanelName }}Panel(screen *_misc_.Miscellaneous, tabItemContentConsumer *_types_.DocTabsTabItemContentConsumer, tabItem *container.TabItem) (panel *{{ .PanelName }}Panel, err error) {
 
 	defer func() {
 		if err != nil {
@@ -79,7 +79,7 @@ func (panel *{{ .PanelName }}Panel) ID() (id string) {
 }
 
 // Show doesn't do anything becuase this panel is always shown by it's tabItem.
-func (panel *{{ .PanelName }}Panel) Show() {}
+func (panel *{{ .PanelName }}Panel) Show(isMainThread bool) {}
 
 // Producer returns the panel's producer.
 // func (panel *{{ .PanelName }}Panel) Producer() (producer *_producer_.ContentProducer) {
@@ -94,12 +94,13 @@ func (panel *{{ .PanelName }}Panel) CanvasObject() (canvasObject fyne.CanvasObje
 	return
 }
 
+// Required cleanup after unbinding.
 func (panel *{{ .PanelName }}Panel) UnBindCleanUP() {
 	panel.messenger.StopReceiving()
 }
 
 // State returns the panel's state.
-func (panel *{{ .PanelName }}Panel) State() (state *_content_.State) {
+func (panel *{{ .PanelName }}Panel) State() (state _types_.Stater) {
 	state = panel.state
 	return
 }

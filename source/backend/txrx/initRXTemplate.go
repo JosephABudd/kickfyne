@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	_api_ "{{ .ImportPrefix }}/backend/txrx/api"
 	_message_ "{{ .ImportPrefix }}/shared/message"
 	_store_ "{{ .ImportPrefix }}/shared/store"
 )
@@ -17,7 +18,7 @@ import (
 const initF = "receiveInit: %s"
 
 func init() {
-	addReceiver(_message_.InitID, receiveInit)
+	_api_.AddReceiver(_message_.InitID, receiveInit)
 }
 
 func receiveInit(ctx context.Context, ctxCancel context.CancelFunc, stores *_store_.Stores, msg interface{}) {
@@ -29,11 +30,11 @@ func receiveInit(ctx context.Context, ctxCancel context.CancelFunc, stores *_sto
 		case err != nil:
 			initMsg.Error = true
 			initMsg.ErrorMessage = fmt.Sprintf(initF, err.Error())
-			Send(initMsg)
+			_api_.Send(initMsg)
 		case fatal != nil:
 			initMsg.Fatal = true
 			initMsg.ErrorMessage = fmt.Sprintf(initF, fatal.Error())
-			Send(initMsg)
+			_api_.Send(initMsg)
 		default:
 			// No errors so don't send back the Init message.
 		}

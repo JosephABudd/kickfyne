@@ -20,6 +20,7 @@ func CreateFramework(
 	}()
 
 	var oPath string
+	var templateData any
 
 	// frontend/types/interfaces.go.
 	oPath = filepath.Join(folderPaths.FrontendTypes, interfacesFileName)
@@ -40,8 +41,11 @@ func CreateFramework(
 	}
 
 	// frontend/types/docTabItemContentConsumer.go
+	templateData = &docTabItemContentConsumerTemplateData{
+		ImportPrefix: importPrefix,
+	}
 	oPath = filepath.Join(folderPaths.FrontendTypes, docTabItemContentConsumerFileName)
-	if err = _utils_.ProcessTemplate(docTabItemContentConsumerFileName, oPath, docTabItemContentConsumerTemplate, nil); err != nil {
+	if err = _utils_.ProcessTemplate(docTabItemContentConsumerFileName, oPath, docTabItemContentConsumerTemplate, templateData); err != nil {
 		return
 	}
 

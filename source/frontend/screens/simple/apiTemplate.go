@@ -34,170 +34,184 @@ import (
 	_producer_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/producer"
 	_txrx_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/txrx"
 	_types_ "{{ .ImportPrefix }}/frontend/types"
+	_thread_ "{{ .ImportPrefix }}/shared/thread"
 )
 
-var unSpawnedPackageScreen *_misc_.Miscellaneous
-var unSpawnedPackageMessenger *_txrx_.Messenger
-var unSpawnedWindowConsumer *_types_.WindowContentConsumer
-var initErr error
+var screenCount uint = 0
+func nextScreenCount() (count uint) {
+	count = screenCount
+	screenCount++
+	return
+}
 
 // NewWindowContentConsumer constructs a new screen and returns a window content consumer of the screen's content.
-func NewWindowContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window) (consumer *_types_.WindowContentConsumer, err error) {
-	if initErr != nil {
-		err = initErr
-		return
-	}
-
+func NewWindowContentConsumer(
+	ctx context.Context,
+	ctxCancel context.CancelFunc,
+	app fyne.App,
+	window fyne.Window,
+	isInMainMenu bool,
+) (
+	screenID string,
+	windowContentConsumer *_types_.WindowContentConsumer,
+	startupMessenger _types_.StartupMessenger,
+	err error,
+){
+	var messenger *_txrx_.Messenger
 	defer func() {
 		if err != nil {
-			unSpawnedPackageScreen = nil
-			unSpawnedPackageMessenger = nil
-			err = fmt.Errorf("{{ .PackageName }}.New: %w", err)
-			initErr = err
-		} else {
-			initErr = nil
-			consumer = unSpawnedWindowConsumer
-			unSpawnedPackageScreen.Layout.Producer().Refresh()
+			err = fmt.Errorf("{{ .PackageName }}.NewWindowContentConsumer: %w", err)
 		}
 	}()
 
-	if unSpawnedWindowConsumer != nil {
-		// This unspawned packages has already been constructed so reuse it.
-		return
-	}
-
-	const notSpawned bool = false
-	unSpawnedWindowConsumer = _types_.NewWindowContentConsumer(w)
-	if unSpawnedPackageScreen, unSpawnedPackageMessenger, err = newScreenMessenger(ctx, ctxCancel, app, w, notSpawned, unSpawnedWindowConsumer); err != nil {
-		return
-	}
-
-	// This screen only show 1 of it's panels at a time.
-	// Show the default panel.
-	unSpawnedPackageScreen.Panelers.DefaultPanel.Show()
-
-	return
-}
-
-// NewTabItemContentConsumer constructs a new screen and returns a TabItem content consumer of the screen's content.
-func NewTabItemContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, tabItem *container.TabItem, screenConsumer _types_.ContentConsumer) (tabItemConsumer *_types_.TabItemContentConsumer, err error) {
-	tabItemConsumer, _, err = newTabItemContentConsumer(ctx, ctxCancel, app, w, tabItem, screenConsumer, false)
-	return
-}
-
-// NewSpawnedTabItemContentConsumer constructs a new screen and returns a TabItem content consumer of the screen's content.
-func NewSpawnedTabItemContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, tabItem *container.TabItem, screenConsumer _types_.ContentConsumer) (tabItemConsumer *_types_.TabItemContentConsumer, messenger *_txrx_.Messenger, err error) {
-	tabItemConsumer, messenger, err = newTabItemContentConsumer(ctx, ctxCancel, app, w, tabItem, screenConsumer, true)
-	return
-}
-
-// newTabItemContentConsumer constructs a new screen and returns a TabItem content consumer of the screen's content.
-func newTabItemContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, tabItem *container.TabItem, screenConsumer _types_.ContentConsumer, spawned bool) (tabItemConsumer *_types_.TabItemContentConsumer, messenger *_txrx_.Messenger, err error) {
-	if !spawned {
-		if initErr != nil {
-			err = initErr
-			return
-		}
-
-		if unSpawnedPackageScreen != nil {
-			// unSpawnedPackageScreen.Layout.producer already exists.
-			// Bind this tabItem consumer and the producer.
-			tabItemConsumer = _types_.NewTabItemContentConsumer(tabItem, spawned)
-			messenger = unSpawnedPackageMessenger
-			producer := unSpawnedPackageScreen.Layout.Producer()
-			tabItemConsumer.Bind(producer)
-			return
-		}
-	}
-
+	// Screen ID.
+	screenID = fmt.Sprintf("{{ .PackageName }}:Window:%d", nextScreenCount())
+	// Consumer.
+	windowContentConsumer = _types_.NewWindowContentConsumer(window, isInMainMenu)
+	// Screen & messenger.
 	var packageScreen *_misc_.Miscellaneous
-	var packageMessenger *_txrx_.Messenger
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("{{ .PackageName }}.NewTabItemContentConsumer: %w", err)
-			initErr = err
-		} else {
-			if !spawned {
-				unSpawnedPackageMessenger = packageMessenger
-				unSpawnedPackageScreen = packageScreen
-			}
-			initErr = nil
-		}
-	}()
-
-	tabItemConsumer = _types_.NewTabItemContentConsumer(tabItem, spawned)
-	if packageScreen, packageMessenger, err = newScreenMessenger(ctx, ctxCancel, app, w, spawned, tabItemConsumer); err != nil {
+	if packageScreen, messenger, err = newScreenMessenger(ctx, ctxCancel, app, window, windowContentConsumer, screenID); err != nil {
 		return
 	}
+	startupMessenger = messenger
 
 	// This screen only show 1 of it's panels at a time.
 	// Show the default panel.
-	packageScreen.Panelers.DefaultPanel.Show()
+	isMainThread := _thread_.IsMainThread()
+	packageScreen.Panelers.DefaultPanel.Show(isMainThread)
+	packageScreen.Layout.Producer().Refresh(isMainThread)
+
+	return
+}
+
+// NewAppTabsTabItemContentConsumer constructs a new screen and returns a TabItem content consumer of the screen's content.
+func NewAppTabsTabItemContentConsumer(
+	ctx context.Context,
+	ctxCancel context.CancelFunc,
+	app fyne.App,
+	window fyne.Window,
+	appTabs *container.AppTabs,
+	tabItem *container.TabItem,
+) (
+	appTabsTabItemContentConsumer *_types_.AppTabsTabItemContentConsumer,
+	startupMessenger _types_.StartupMessenger,
+	err error,
+) {
+	var messenger *_txrx_.Messenger
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("{{ .PackageName }}.NewAppTabsTabItemContentConsumer: %w", err)
+		}
+	}()
+
+	// Screen ID.
+	screenID := fmt.Sprintf("{{ .PackageName }}:AppTabsTabItem:%d", nextScreenCount())
+	// Consumer.
+	appTabsTabItemContentConsumer = _types_.NewAppTabsTabItemContentConsumer(appTabs, tabItem)
+	// Screen & messenger.
+	var packageScreen *_misc_.Miscellaneous
+	if packageScreen, messenger, err = newScreenMessenger(ctx, ctxCancel, app, window, appTabsTabItemContentConsumer, screenID); err != nil {
+		return
+	}
+	startupMessenger = messenger
+
+	// This screen only show 1 of it's panels at a time.
+	// Show the default panel.
+	isMainThread := _thread_.IsMainThread()
+	packageScreen.Panelers.DefaultPanel.Show(isMainThread)
+	packageScreen.Layout.Producer().Refresh(isMainThread)
+
+	return
+}
+
+// NewDocTabsTabItemContentConsumer constructs a new screen and returns a TabItem content consumer of the screen's content.
+func NewDocTabsTabItemContentConsumer(
+	ctx context.Context,
+	ctxCancel context.CancelFunc,
+	app fyne.App,
+	window fyne.Window,
+	docTabs *container.DocTabs,
+	tabItem *container.TabItem,
+) (
+	docTabsTabItemContentConsumer *_types_.DocTabsTabItemContentConsumer,
+	startupMessenger _types_.StartupMessenger,
+	err error,
+) {
+	var messenger *_txrx_.Messenger
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("{{ .PackageName }}.NewDocTabsTabItemContentConsumer: %w", err)
+		}
+	}()
+
+	// Screen ID.
+	screenID := fmt.Sprintf("{{ .PackageName }}:DocTabsTabItem:%d", nextScreenCount())
+	// Consumer.
+	docTabsTabItemContentConsumer = _types_.NewDocTabsTabItemContentConsumer(docTabs, tabItem)
+	// Screen & messenger.
+	var packageScreen *_misc_.Miscellaneous
+	if packageScreen, messenger, err = newScreenMessenger(ctx, ctxCancel, app, window, docTabsTabItemContentConsumer, screenID); err != nil {
+		return
+	}
+	startupMessenger = messenger
+
+	// This screen only show 1 of it's panels at a time.
+	// Show the default panel.
+	isMainThread := _thread_.IsMainThread()
+	packageScreen.Panelers.DefaultPanel.Show(isMainThread)
+	packageScreen.Layout.Producer().Refresh(isMainThread)
 
 	return
 }
 
 // NewAccordionItemContentConsumer constructs a new screen and returns a AccordionItem content consumer of the screen's content.
-func NewAccordionItemContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, accordionItem *widget.AccordionItem, screenConsumer _types_.ContentConsumer) (accordionItemContentConsumer *_types_.AccordionItemContentConsumer, err error) {
-	accordionItemContentConsumer, _, err = newAccordionItemContentConsumer(ctx, ctxCancel, app, w, accordionItem, screenConsumer, false)
-	return
-}
-
-// NewSpawnedAccordionItemContentConsumer constructs a new screen and returns a AccordionItem content consumer of the screen's content.
-func NewSpawnedAccordionItemContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, accordionItem *widget.AccordionItem, screenConsumer _types_.ContentConsumer) (accordionItemContentConsumer *_types_.AccordionItemContentConsumer, messenger *_txrx_.Messenger, err error) {
-	accordionItemContentConsumer, messenger, err = newAccordionItemContentConsumer(ctx, ctxCancel, app, w, accordionItem, screenConsumer, true)
-	return
-}
-
-// newAccordionItemContentConsumer constructs a new screen and returns a AccordionItem content consumer of the screen's content.
-func newAccordionItemContentConsumer(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, accordionItem *widget.AccordionItem, screenConsumer _types_.ContentConsumer, spawned bool) (accordionItemContentConsumer *_types_.AccordionItemContentConsumer, messenger *_txrx_.Messenger, err error) {
-	if !spawned {
-		if initErr != nil {
-			err = initErr
-			return
-		}
-
-		if unSpawnedPackageScreen != nil {
-			// unSpawnedPackageScreen.Layout.producer already exists.
-			// Bind this accordionItem consumer and the producer.
-			accordionItemContentConsumer = _types_.NewAccordionItemContentConsumer(accordionItem, screenConsumer, spawned)
-			messenger = unSpawnedPackageMessenger
-			producer := unSpawnedPackageScreen.Layout.Producer()
-			accordionItemContentConsumer.Bind(producer)
-			return
-		}
-	}
-
-	var packageScreen *_misc_.Miscellaneous
-	var packageMessenger *_txrx_.Messenger
+func NewAccordionItemContentConsumer(
+	ctx context.Context,
+	ctxCancel context.CancelFunc,
+	app fyne.App,
+	window fyne.Window,
+	accordion *widget.Accordion,
+	accordionItem *widget.AccordionItem,
+) (
+		accordionItemContentConsumer *_types_.AccordionItemContentConsumer,
+		startupMessenger _types_.StartupMessenger,
+		err error,
+) {
+	var screenID string
+	var messenger *_txrx_.Messenger
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("{{ .PackageName }}.newAccordionItemContentConsumer: %w", err)
-			initErr = err
-		} else {
-			if !spawned {
-				unSpawnedPackageMessenger = packageMessenger
-				unSpawnedPackageScreen = packageScreen
-			}
-			initErr = nil
+			err = fmt.Errorf("{{ .PackageName }}.NewAccordionItemContentConsumer: %w", err)
 		}
 	}()
 
-	accordionItemContentConsumer = _types_.NewAccordionItemContentConsumer(accordionItem, screenConsumer, spawned)
-	if packageScreen, packageMessenger, err = newScreenMessenger(ctx, ctxCancel, app, w, spawned, accordionItemContentConsumer); err != nil {
+	// Screen ID.
+	screenID = fmt.Sprintf("{{ .PackageName }}:AccordionItem:%d", nextScreenCount())
+	// Consumer.
+	accordionItemContentConsumer = _types_.NewAccordionItemContentConsumer(accordion, accordionItem)
+	// Screen & messenger.
+	var packageScreen *_misc_.Miscellaneous
+	if packageScreen, messenger, err = newScreenMessenger(ctx, ctxCancel, app, window, accordionItemContentConsumer, screenID); err != nil {
 		return
 	}
 
 	// This screen only show 1 of it's panels at a time.
 	// Show the default panel.
-	packageScreen.Panelers.DefaultPanel.Show()
-
+	isMainThread := _thread_.IsMainThread()
+	packageScreen.Panelers.DefaultPanel.Show(isMainThread)
+	packageScreen.Layout.Producer().Refresh(isMainThread)
+	startupMessenger = messenger
 	return
 }
 
-func newScreenMessenger(ctx context.Context, ctxCancel context.CancelFunc, app fyne.App, w fyne.Window, spawned bool, consumer _types_.ContentConsumer) (screen *_misc_.Miscellaneous, messenger *_txrx_.Messenger, err error) {
+func newScreenMessenger(
+	ctx context.Context, ctxCancel context.CancelFunc,
+	app fyne.App, window fyne.Window,
+	consumer _types_.ContentConsumer,
+	id string,
+) (screen *_misc_.Miscellaneous, messenger *_txrx_.Messenger, err error) {
 	// Build the content & producer.
-	producer := _producer_.NewContentProducer(spawned, consumer)
+	producer := _producer_.NewContentProducer(consumer)
 	producer.Bind(consumer)
 
 	// Build Layout
@@ -205,7 +219,7 @@ func newScreenMessenger(ctx context.Context, ctxCancel context.CancelFunc, app f
 	if layout, err = _layout_.NewLayout(producer); err != nil {
 		return
 	}
-	if screen, err = _misc_.NewMiscellaneous(ctx, ctxCancel, app, w, layout); err != nil {
+	if screen, err = _misc_.NewMiscellaneous(ctx, ctxCancel, app, window, layout, id); err != nil {
 		return
 	}
 
@@ -230,9 +244,6 @@ func newScreenMessenger(ctx context.Context, ctxCancel context.CancelFunc, app f
 	if messenger, err = _txrx_.NewMessenger(screen); err != nil {
 		return
 	}
-{{- range $panelName := .LocalPanelNames }}
-	{{ call $DOT.Funcs.DeCap $panelName }}Panel.SetMessenger(messenger)
-{{- end }}
 
 	return
 }

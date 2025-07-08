@@ -1,6 +1,7 @@
 package panelers
 
 type PanelersTemplateData struct {
+	ImportPrefix    string
 	LocalPanelNames []string
 }
 
@@ -10,7 +11,7 @@ const (
 	PanelersTemplate = `package panelers
 
 import (
-	_types_ "example.com/okp/frontend/types"
+	_types_ "{{ .ImportPrefix }}/frontend/types"
 )
 
 // Panelers is this screen's panels.

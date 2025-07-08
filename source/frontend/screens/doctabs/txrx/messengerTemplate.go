@@ -1,35 +1,44 @@
-package misc
+package txrx
+
+import (
+	_utils_ "github.com/JosephABudd/kickfyne/source/utils"
+)
 
 type MessengerTemplateData struct {
-	PackageName      string
-	ImportPrefix     string
-	LocalPanelNames  []string
-	DefaultPanelName string
+	PackageName                  string
+	ImportPrefix                 string
+	LocalPanelNames              []string
+	DocTabMessageB2FAddTabbar    string
+	DocTabMessageB2FAddTab       string
+	DocTabMessageB2FRemoveTabbar string
+	DocTabMessageB2FRemoveTab    string
+	DocTabMessageF2BAddTabbar    string
+	DocTabMessageF2BAddTab       string
+	DocTabMessageF2BRemoveTabbar string
+	DocTabMessageF2BRemoveTab    string
+	Funcs                        _utils_.Funcs
 }
 
 const (
 	MessengerFileName = "messenger.go"
 
 	MessengerTemplate = `{{ $DOT := . -}}
-package misc
+package txrx
 
 import (
 	"fmt"
 
 	_misc_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/misc"
-	_panels_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/panels"
-	_tabs_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/tabs"
 	_txrxchans_ "{{ .ImportPrefix }}/frontend/txrxchans"
-	_message_ "{{ .ImportPrefix }}/shared/message"
+	_message_ "{{ .ImportPrefix }}/shared/message/{{ .PackageName }}"
 
 	// Local panels.
 {{- range $panelName := .LocalPanelNames }}
-	_{{ $DOT.Funcs.LowerCase $panelName }}panel_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/panels/{{ $panelName }}Panel"
+	// _{{ call $DOT.Funcs.LowerCase $panelName }}panel_ "{{ $DOT.ImportPrefix }}/frontend/screens/{{ $DOT.PackageName }}/panels/{{ $panelName }}Panel"
 {{- end }}
 )
 
-// type Messenger communicates with the backend listening for 1 message.
-// The message is Spawn{{ .PackageName }}Tab.
+// type Messenger communicates with the backend using 8 messages.
 // Messenger implements the _txrxchans_.Receiver interface.
 type Messenger struct {
 	screen *_misc_.Miscellaneous
@@ -44,23 +53,14 @@ func NewMessenger(screen *_misc_.Miscellaneous) (messenger *Messenger, err error
 	return
 }
 
-func (messenger *Messenger) SendOpenedNew{{ .PackageName }}(remoteData _tabbar_model_.{{ .PackageName }}RemoteData) {
-	msg := _message_.NewSpawn{{ .PackageName }}(
-		messenger.ScreenPackage(),
-		remoteData,
-	)
-	// Send the message back with the PanelID.
-	_txrxchans_.Send(msg)
-}
-
 func (messenger *Messenger) StopReceiving() {
 	_txrxchans_.UnSpawnReceiver(messenger)
 }
 
-// ScreenPackage returns this screen's package name.
+// ID returns this messenger's id.
 // It is part of the _txrxchans_.Receiver interface implementation.
-func (messenger *Messenger) ScreenPackage() (name string) {
-	name = messenger.screen.ScreenID
+func (messenger *Messenger) ID() (id string) {
+	id = messenger.screen.ScreenID
 	return
 }
 
@@ -77,7 +77,10 @@ func (messenger *Messenger) startReceiving() (err error) {
 	// Listen for the Spawn{{ .PackageName }}Tab message.
 	if err = _txrxchans_.AddReceiver(
 		messenger,
-		_message_.Spawn{{ .PackageName }}TabID,
+		_message_.B2FAddTabbar{{ .PackageName }}ID,
+		_message_.B2FAddTab{{ .PackageName }}ID,
+		_message_.B2FRemoveTabbar{{ .PackageName }}ID,
+		_message_.B2FRemoveTab{{ .PackageName }}ID,
 	); err != nil {
 		return
 	}
@@ -89,67 +92,24 @@ func (messenger *Messenger) startReceiving() (err error) {
 // It is part of the _txrxchans_.Receiver interface implementation.
 func (messenger *Messenger) Receive(msg any) {
 	switch msg := msg.(type) {
-	case *_message_.Spawn{{ .PackageName }}Tab:
-		messenger.receiveSpawn{{ .PackageName }}Tab(msg)
-	case *_message_.Spawned{{ .PackageName }}Tab:
-		messenger.receiveSpawned{{ .PackageName }}Tab(msg)
+	case *_message_.B2FAddTabbar{{ .PackageName }}:
+		messenger.receive{{ .DocTabMessageB2FAddTabbar }}(msg)
+	case *_message_.B2FAddTab{{ .PackageName }}:
+		messenger.receive{{ .DocTabMessageB2FAddTab }}(msg)
+	case *_message_.B2FRemoveTabbar{{ .PackageName }}:
+		messenger.receive{{ .DocTabMessageB2FRemoveTabbar }}(msg)
+	case *_message_.B2FRemoveTab{{ .PackageName }}:
+		messenger.receive{{ .DocTabMessageB2FRemoveTab }}(msg)
 	}
 }
 
-// receiveSpawned{{ .PackageName }}Tab handles a received Spawn{{ .PackageName }}Tab message from the back-end.
-func (messenger *Messenger) receiveSpawned{{ .PackageName }}Tab(msg *_message_.Spawned{{ .PackageName }}Tab) {
-	// Here the back-end is replying to the front-end.
-	// If there was an error then unspawn the spawned tab.
-	if msg.Error {
-		// There was a back-end error so cancel the spawn.
-		// Unspawn the tab.
-		messenger.screen.Layout.RemoveID(msg.TabMessengerID)
-	}
-}
-
-// receiveSpawn{{ .PackageName }}Tab handles a received Spawn{{ .PackageName }}Tab message from the back-end.
-// The back-end is asking the front-end to spawn a new tab.
-func (messenger *Messenger) receiveSpawn{{ .PackageName }}Tab(msg *_message_.Spawn{{ .PackageName }}Tab) {
-	var err error
-	switch msg.Tab {
-{{- range $panelName := .LocalPanelNames }}
-	case _tabbar_model_.Tab{{ $panelName }}:
-		// Spawn a new {{ $panelName }} Tab with it's {{ $panelName }} panel.
-		var panel *_panels_.{{ $panelName }}Panel
-		if panel, err = _tabs_.New{{ $panelName }}Tab(messenger.screen, true); err != nil {
-			// Return the message with the error information.
-			msg.Error = true
-			msg.ErrorMessage = "{{ .PackageName }}.txrx.Messenger.receiveSpawn{{ .PackageName }}Tab: _tabs_.New{{ $panelName }}Tab error: " + err.Error()
-			_txrxchans_.Send(msg)
-			return
-		}
-		// Added a new Hello tab.
-		// Set the state from the message.
-		var state *_{{ $DOT.FuncsLowerCase $panelName }}panel_.State = panel.State()
-		state.Set(
-			// Tab settings.
-			state.SetTabLabel(msg.TabLabel),
-			state.SetTabIcon(msg.TabIcon),
-			// Panel settings.
-			state.SetHeading(msg.{{ $panelName }}PanelHeading),
-			state.SetDescription(msg.{{ $panelName }}PanelDescription),
-		)
-		// Return the message with new tab information.
-		msg.SpawnedMessengerID = panel.ID()
-		_txrxchans_.Send(msg)
-{{- end }}
-	}
-}
-
-func (messenger *Messenger) unSpawn(msg *_message_.Spawned{{ .PackageName }}Tab) {
-	// There was a back-end error so cancel the spawn.
-	switch msg.Tab {
-{{- range $panelName := .LocalPanelNames }}
-	case _tabbar_model_.Tab{{ $panelName }}:
-		// Remove this {{ $panelName }} tab.
-		messenger.screen.Layout.RemoveID(msg.{{ .PackageName }}MessengerID)
-{{- end }}
-	}
-}
+// LoadStartupData(data any) requests initialization data from the back-end.
+// It is an implementation of the _types_.StartupMessenger any.
+// If this func is to be used:
+// * A message will need to be created and defined.
+// * Param data should be publically defined above.
+// * This func should be completed to send the message.
+// * Another func should be completed to receive the message.
+func (messenger *Messenger) LoadStartupData(data any) {}
 `
 )

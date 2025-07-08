@@ -15,23 +15,30 @@ var currentWindowContentConsumer *WindowContentConsumer
 // WindowContentConsumer implements ContentConsumer
 // It has no producer but instead has WindowContentConsumer.canvasObject which is a screen's canvas object.
 type WindowContentConsumer struct {
-	window    fyne.Window
-	producer  ContentProducer
-	isShowing bool
+	window       fyne.Window
+	producer     ContentProducer
+	isShowing    bool
+	isInMainMenu bool
 }
 
-func NewWindowContentConsumer(window fyne.Window) (consumer *WindowContentConsumer) {
+func NewWindowContentConsumer(window fyne.Window, isInMainMenu bool) (consumer *WindowContentConsumer) {
 	consumer = &WindowContentConsumer{
-		window: window,
+		window:       window,
+		isInMainMenu: isInMainMenu,
 	}
 	return
 }
 
 // ContentConsumer implementations.
 
+func (consumer *WindowContentConsumer) IsMainMenu() (isInMainMenu bool) {
+	isInMainMenu = consumer.isInMainMenu
+	return
+}
+
 // Show sets consumer as the window's content.
 // Show is the implementation of ContentConsumer.
-func (consumer *WindowContentConsumer) Show() {
+func (consumer *WindowContentConsumer) Show(isMainThread bool) {
 	if currentWindowContentConsumer == consumer {
 		// This consumer is currently showing.
 		return
@@ -41,7 +48,7 @@ func (consumer *WindowContentConsumer) Show() {
 	}
 	consumer.isShowing = true
 	currentWindowContentConsumer = consumer
-	consumer.Refresh()
+	consumer.refresh(isMainThread, true)
 }
 
 // IsVisible returns if this content is visible in the window.
@@ -63,6 +70,11 @@ func (consumer *WindowContentConsumer) Bind(producer ContentProducer) {
 	producer.Bind(consumer)
 }
 
+func (consumer *WindowContentConsumer) CanUnBind() (canUnBind bool) {
+	canUnBind = !consumer.isInMainMenu
+	return
+}
+
 // UnBind unbinds the consumer from it's producer.
 // Bind is the implementation of ContentConsumer.
 func (consumer *WindowContentConsumer) UnBind() {
@@ -76,23 +88,75 @@ func (consumer *WindowContentConsumer) UnBind() {
 	producer.UnBind(consumer)
 }
 
-// Refresh:
-// 1. Moves content from the producer to the window.
-// 2. Has the window refresh.
+// Refresh refreshes the window if there is something to refresh.
 // Refresh is thread safe.
 // Refresh is the implementation of ContentConsumer.
-func (consumer *WindowContentConsumer) Refresh() {
-	fyne.Do(
-		func() {
+func (consumer *WindowContentConsumer) Refresh(isMainThread bool) {
+	consumer.refresh(isMainThread, false)
+}
+
+// refresh:
+// 1. Moves content from the producer to the window.
+// 2. Has the window refresh.
+// Param forceCanvasObject indicates if the canvas object must be refreshed no matter what.
+// Refresh is thread safe.
+// Refresh is the implementation of ContentConsumer.
+func (consumer *WindowContentConsumer) refresh(isMainThread bool, forceCanvasObject bool) {
+	var set bool
+	if isMainThread {
+		if forceCanvasObject {
+			set = true
+			canvasObject := consumer.producer.CanvasObjectForce(consumer)
+			consumer.window.SetContent(canvasObject)
+		} else {
 			if canvasObject := consumer.producer.CanvasObject(consumer); canvasObject != nil {
+				set = true
 				consumer.window.SetContent(canvasObject)
 			}
-			if title := consumer.producer.Title(consumer); len(title) > 0 {
-				consumer.window.SetTitle(title)
+		}
+		if title := consumer.producer.Title(consumer); title != nil && len(*title) > 0 {
+			set = true
+			consumer.window.SetTitle(*title)
+		}
+		if set {
+			consumer.window.Content().Refresh()
+		}
+
+	} else {
+		if forceCanvasObject {
+			set = true
+			canvasObject := consumer.producer.CanvasObjectForce(consumer)
+			fyne.Do(
+				func() {
+					consumer.window.SetContent(canvasObject)
+				},
+			)
+		} else {
+			if canvasObject := consumer.producer.CanvasObject(consumer); canvasObject != nil {
+				set = true
+				fyne.Do(
+					func() {
+						consumer.window.SetContent(canvasObject)
+					},
+				)
 			}
-			// consumer.window.Content().Refresh()
-		},
-	)
+		}
+		if title := consumer.producer.Title(consumer); title != nil && len(*title) > 0 {
+			set = true
+			fyne.Do(
+				func() {
+					consumer.window.SetTitle(*title)
+				},
+			)
+		}
+		if set {
+			fyne.Do(
+				func() {
+					consumer.window.Content().Refresh()
+				},
+			)
+		}
+	}
 }
 
 // IsWindowContentConsumer returns true because this is a window consumer.

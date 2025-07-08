@@ -8,26 +8,27 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-type StateSetter func()
+type StateSetter func(isMainThread bool) (refreshCanvasObject bool)
 
 type Stater interface {
 	Get() (state any)
-	Set(state ...StateSetter)
+	Set(setters ...StateSetter)
 }
 
 // Panel
 type Paneler interface {
-	ID() (id int64)
-	Show()
+	ID() (id string)
+	Show(isMainThread bool)
 	State() (state Stater)
 	CanvasObject() (content fyne.CanvasObject)
 	Producer() (producer ContentProducer)
+	UnBindCleanUP()
 }
 
 type ContentConsumer interface {
-	Show()
+	Show(isMainThread bool)
 	IsVisible() (is bool)
-	Refresh()
+	Refresh(isMainThread bool)
 	Bind(producer ContentProducer)
 	UnBind() // Call producer.UnBind(self). Delete self. WindowContentProducer does nothing.
 	IsWindowContentConsumer() (is bool)
@@ -36,10 +37,13 @@ type ContentConsumer interface {
 // ContentProducer produces the content for a ContentConsumer.
 type ContentProducer interface {
 	// Window, TabItem, AccordionItem funcs.
+	CanvasObjectForce(consumer ContentConsumer) (canvasObject fyne.CanvasObject)
 	CanvasObject(consumer ContentConsumer) (canvasObject fyne.CanvasObject)
+	SetCanvasObject(canvasObject fyne.CanvasObject)
 	Bind(consumer ContentConsumer)
 	UnBind(consumer ContentConsumer) //Stop using this consumer. Delete the package if no other consumers.
 	IsVisible() (is bool)
+	Refresh(isMainThread bool)
 
 	// Window only func.
 	Title(consumer ContentConsumer) (title *string)
@@ -51,8 +55,9 @@ type ContentProducer interface {
 	Label(consumer ContentConsumer) (label *string)
 }
 
-// MessageSpawner sends a message to the backend
-type MessageSpawner interface {
+// StartupMessenger sends a message to the backend
+type StartupMessenger interface {
+	LoadStartupData(data any)
 	StopReceiving()
 }
 `

@@ -6,9 +6,11 @@ const (
 
 type frontendTemplateData struct {
 	ImportPrefix string
+	ScreenNames  []string
 }
 
-var frontendTemplate = `package frontend
+var frontendTemplate = `{{ $DOT := . -}}
+package frontend
 
 import (
 	"context"
@@ -17,7 +19,12 @@ import (
 	"fyne.io/fyne/v2"
 
 	_mainmenu_ "{{ .ImportPrefix }}/frontend/mainmenu"
+	_screenmap_ "{{ .ImportPrefix }}/frontend/screenmap"
 	_txrxchans_ "{{ .ImportPrefix }}/frontend/txrxchans"
+
+{{ range $screenName := .ScreenNames }}
+	_{{ $screenName }}_ "{{ $DOT.ImportPrefix }}/frontend/screens/{{ $screenName }}"
+{{- end }}
 )
 
 func Start(ctx context.Context, ctxCancelFunc context.CancelFunc, app fyne.App, window fyne.Window) (err error) {
@@ -28,16 +35,24 @@ func Start(ctx context.Context, ctxCancelFunc context.CancelFunc, app fyne.App, 
 		}
 	}()
 
+	// Set the screen map.
+{{ range $screenName := .ScreenNames }}
+	_screenmap_.Map["{{ $screenName }}"] = &_screenmap_.API{
+		NewWindowContentConsumer:         _{{ $screenName }}_.NewWindowContentConsumer,
+		NewAppTabsTabItemContentConsumer: _{{ $screenName }}_.NewAppTabsTabItemContentConsumer,
+		NewDocTabsTabItemContentConsumer: _{{ $screenName }}_.NewDocTabsTabItemContentConsumer,
+		NewAccordionItemContentConsumer:  _{{ $screenName }}_.NewAccordionItemContentConsumer,
+	}
+{{- end }}
+
 	// Initialize main menu.
 	// The developer must ensure that all panel groups should get initialized from main menu.
-	if err = _mainmenu_.Init(ctx, ctxCancelFunc, app, window); err != nil {
-		return
-	}
+	_mainmenu_.Init(ctx, ctxCancelFunc, app, window)
 
 	// Start communications with the back-end.
 	// The receiver will run as a concurrent process.
 	_txrxchans_.StartReceiver(ctx, ctxCancelFunc)
+
 	return
 }
-
 `

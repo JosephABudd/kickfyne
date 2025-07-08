@@ -1,4 +1,4 @@
-package screens
+package panel
 
 import (
 	_utils_ "github.com/JosephABudd/kickfyne/source/utils"
@@ -16,62 +16,77 @@ const (
 	StateTemplate = `package {{ .PanelName }}Panel
 
 import(
+	"fyne.io/fyne/v2"
+
 	_types_ "{{ .ImportPrefix }}/frontend/types"
+	_thread_ "{{ .ImportPrefix }}/shared/thread"
 )
 
 type Getters struct {
+	ID          func() string
 	Heading     func() string
 	Description func() string
 }
 
 // State is the state for the {{ .PanelName }} panel.
 type State struct {
+	id      string
 	content *Content
-	refresh func()
 
 }
 
 // NewState constructs a new content state.
 // It may or may not make some initial settings.
-func NewState(content *Content, refresh func()) (state *State, err error) {
+func NewState(
+	content *Content,
+	screenID string,
+) (state *State, err error) {
 	state = &State{
 		content: content,
-		refresh: refresh,
+		id:      screenID + ".{{ .PanelName }}",
 	}
 	// Initial settings.
 	state.initialSet(
 		state.SetHeading("{{ .PackageName }} screen : {{ .PanelName }} panel."),
-		state.SetDescription("Using this heading and description as an examples."),
+		state.SetDescription("Using this heading and description as examples."),
 	)
 	return
 }
 
 // initialSet sets state for the constructor func NewState.
 func (state *State) initialSet(setters ..._types_.StateSetter) {
+	isMainThread := _thread_.IsMainThread()
 	for _, setter := range setters {
-		setter()
+		setter(isMainThread)
 	}
 }
 
 // Set sets the state.
 func (state *State) Set(setters ..._types_.StateSetter) {
+	isMainThread := _thread_.IsMainThread()
 	var refreshCanvasObject bool
 	for _, setter := range setters {
-		if setter() {
-			refreshCanvasObject = true
-		}
+		refreshCanvasObject = refreshCanvasObject || setter(isMainThread)
 	}
+	producer := state.content.screen.Layout.Producer()
 	if refreshCanvasObject {
-		state.content.producer.SetCanvasObject(state.content.content)
+		producer.SetCanvasObject(state.content.content)
 	}
-	state.content.producer.Refresh()
+	producer.Refresh(isMainThread)
 }
 
 func (state *State) Get() (getters any) {
 	getters = Getters{
+		ID:          state.getID,
 		Heading:     state.getHeading,
 		Description: state.getDescription,
 	}
+	return
+}
+
+// ID is this panel's id.
+func (state *State) getID() (id string) {
+	id = state.id
 	return
 }
 
@@ -79,8 +94,18 @@ func (state *State) Get() (getters any) {
 
 // SetHeading returns a _types_.Setter that sets the content's heading widget's text.
 func (state *State) SetHeading(heading string) (setter _types_.StateSetter) {
-	setter = func() {
-		state.content.heading.Text = heading
+	setter = func(isMainThread bool) (refreshCanvasObject bool) {
+		if isMainThread {
+			state.content.heading.Text = heading
+		} else {
+			fyne.Do(
+				func() {
+					state.content.heading.Text = heading;
+				},
+			)
+		}
+		refreshCanvasObject = true
+		return
 	}
 	return
 }
@@ -94,8 +119,18 @@ func (state *State) getHeading() (heading string) {
 
 // SetDescription returns a _types_.Setter that sets the content's description widget's text.
 func (state *State) SetDescription(description string) (setter _types_.StateSetter) {
-	setter = func() {
-		state.content.description.Text = description
+	setter = func(isMainThread bool) (refreshCanvasObject bool) {
+		if isMainThread {
+			state.content.description.Text = description
+		} else {
+			fyne.Do(
+				func() {
+					state.content.description.Text = description;
+				},
+			)
+		}
+		refreshCanvasObject = true
+		return
 	}
 	return
 }

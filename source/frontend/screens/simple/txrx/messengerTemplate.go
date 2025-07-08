@@ -41,24 +41,14 @@ func NewMessenger(screen *_misc_.Miscellaneous) (messenger *Messenger, err error
 	return
 }
 
-// SendSpawnedMessage(data interface) requests initialization data from the back-end.
-// It is only used if this screen can be content for a spawned tab item or accordion item.
-// It is an implementation of the _types_.MessageSpawner interface.
-// If this func is to be used:
-// * A message will need to be created and defined.
-// * Param data should be publically defined above.
-// * This func should be completed to send the message.
-// * Another func should be completed to receive the message.
-func (messenger *Messenger) SendSpawnedMessage(data any) {}
-
 func (messenger *Messenger) StopReceiving() {
 	_txrxchans_.UnSpawnReceiver(messenger)
 }
 
-// ScreenPackage returns this screen's package name.
+// ID returns this screen's ID.
 // It is part of the _txrxchans_.Receiver interface implementation.
-func (messenger *Messenger) ScreenPackage() (name string) {
-	name = packageName
+func (messenger *Messenger) ID() (id string) {
+	id = messenger.screen.ScreenID
 	return
 }
 
@@ -112,6 +102,15 @@ func (messenger *Messenger) Receive(msg interface{}) {
 	*/
 }
 
+// LoadStartupData(data any) requests initialization data from the back-end.
+// It is an implementation of the _types_.StartupMessenger any.
+// If this func is to be used:
+// * A message will need to be created and defined.
+// * Param data should be publically defined above.
+// * This func should be completed to send the message.
+// * Another func should be completed to receive the message.
+func (messenger *Messenger) LoadStartupData(data any) {}
+
 /* KICKFYNE TODO:
 Add send funcs for each message sent.
 Add receiver funcs for each message received.
@@ -121,14 +120,14 @@ Example:
 
 // sendGetContact sends a GetContact message to the back-end.
 func (messenger *Messenger) sendGetContact(r *_record_.GetContact) {
-	msg := _message_.GetContact(packageName, r)
+	msg := _message_.GetContact(messenger.ID(), r)
 	_txrxchans_.Send(msg)
 }
 
 // receiveGetContact handles a received GetContact message from the back-end.
 func (messenger *Messenger) receiveGetContact(msg *_message_.GetContact) {
 	if msg.Error {
-		if msg.ScreenPackage != packageName {
+		if msg.ScreenPackage != messenger.ID() {
 			// This message was sent by another screen.
 			// That screen will deal with the error.
 			return

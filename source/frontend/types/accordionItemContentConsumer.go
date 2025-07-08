@@ -5,6 +5,7 @@ const (
 	accordionItemContentConsumerTemplate = `package types
 
 import (
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -12,38 +13,42 @@ import (
 // AccordionItemContentConsumer implements ContentConsumer.
 // AccordionItemContentConsumer implements UnSpawner.
 type AccordionItemContentConsumer struct {
-	accordionItem  *widget.AccordionItem
-	producer       ContentProducer
-	screenConsumer ContentConsumer
-	spawned        bool
+	accordion     *widget.Accordion
+	accordionItem *widget.AccordionItem
+
+	// producer makes the content for accordionItem.
+	// 1. accordionItem.Title (label).
+	// 2. accordionItem.Detail (content).
+	// producer can be from
+	// 1. a separate screen.
+	// 2. a panel in this screen.
+	producer ContentProducer // A panel's content producer or a screen's content producer.
 }
 
-func NewAccordionItemContentConsumer(accordionItem *widget.AccordionItem, screenConsumer ContentConsumer, spawned bool) (consumer *AccordionItemContentConsumer) {
+func NewAccordionItemContentConsumer(accordion *widget.Accordion, accordionItem *widget.AccordionItem) (consumer *AccordionItemContentConsumer) {
 	consumer = &AccordionItemContentConsumer{
-		accordionItem:  accordionItem,
-		spawned:        spawned,
-		screenConsumer: screenConsumer,
+		accordion:     accordion,
+		accordionItem: accordionItem,
 	}
 	return
-}
-
-// Show sets the AccordionItem's screen's consumer.
-func (consumer *AccordionItemContentConsumer) SetScreenConsumer(screenConsumer ContentConsumer) {
-	consumer.screenConsumer = screenConsumer
 }
 
 // ContentConsumer implementations.
 
 // Show sets the AccordionItem's content.
 // Show is the implementation of ContentConsumer.
-func (consumer *AccordionItemContentConsumer) Show() {
-	consumer.accordionItem.Detail.Show()
+func (consumer *AccordionItemContentConsumer) Show(isMainThread bool) {
+	if isMainThread {
+		consumer.accordionItem.Detail.Show()
+	} else {
+		fyne.Do(consumer.accordionItem.Detail.Show)
+	}
 }
 
 // IsVisible returns if this content is visible in the window.
 // IsVisible is the implementation of ContentConsumer.
 func (consumer *AccordionItemContentConsumer) IsVisible() (is bool) {
-	is = consumer.screenConsumer.IsVisible()
+	is = consumer.accordionItem.Open
 	return
 }
 
@@ -51,14 +56,18 @@ func (consumer *AccordionItemContentConsumer) IsVisible() (is bool) {
 // 1. Moves content from the producer to the accordionIItem.
 // 2. Has the accordionIItem refresh.
 // Refresh is the implementation of ContentConsumer.
-func (consumer *AccordionItemContentConsumer) Refresh() {
+func (consumer *AccordionItemContentConsumer) Refresh(isMainThread bool) {
 	if label := consumer.producer.Label(consumer); label != nil {
 		consumer.accordionItem.Title = *label
 	}
 	if canvasObject := consumer.producer.CanvasObject(consumer); canvasObject != nil {
 		consumer.accordionItem.Detail = canvasObject
 	}
-	consumer.accordionItem.Detail.Refresh()
+	if isMainThread {
+		consumer.accordion.Refresh()
+	} else {
+		fyne.Do(func() { consumer.accordion.Refresh() })
+	}
 }
 
 // Bind binds to the producer and calls the panel or screen's Producer().Bind().
@@ -80,11 +89,11 @@ func (consumer *AccordionItemContentConsumer) UnBind() {
 		// Not bound to a producer.
 		return
 	}
-	// This accordion was spawned so unspawn it.
 	producer := consumer.producer
 	consumer.producer = nil
 	producer.UnBind(consumer)
-	// Remove this accordion from the accordionbar.
+	// Remove the accordion item from the accordion.
+	consumer.accordion.Remove(consumer.accordionItem)
 }
 
 // IsWindowContentConsumer returns false because this is a accordionItem consumer.

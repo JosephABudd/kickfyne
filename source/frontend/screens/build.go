@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	_accordion_ "github.com/JosephABudd/kickfyne/source/frontend/screens/accordion"
+	_apptabs_ "github.com/JosephABudd/kickfyne/source/frontend/screens/apptabs"
+	_doctabs_ "github.com/JosephABudd/kickfyne/source/frontend/screens/doctabs"
 	_simple_ "github.com/JosephABudd/kickfyne/source/frontend/screens/simple"
-	_tabbar_ "github.com/JosephABudd/kickfyne/source/frontend/screens/tabbar"
 	_utils_ "github.com/JosephABudd/kickfyne/source/utils"
 )
 
@@ -38,6 +39,40 @@ See the code in the panels folder.
 }
 
 // BuildSimplePackage builds a type Simple screen package.
+func BuildAccordionPackage(
+	packageName string,
+	allPanelNames, localPanelNames, remotePanelNames []string,
+	packageDoc string,
+	importPrefix string,
+	folderPaths *_utils_.FolderPaths,
+) (err error) {
+	return _accordion_.Build(
+		packageName,
+		allPanelNames, localPanelNames, remotePanelNames,
+		packageDoc,
+		importPrefix,
+		folderPaths,
+	)
+}
+
+// BuildAppTabsPackage builds a type AppTabs screen package.
+func BuildAppTabsPackage(
+	packageName string,
+	allPanelNames, localPanelNames, remotePanelNames []string,
+	packageDoc string,
+	importPrefix string,
+	folderPaths *_utils_.FolderPaths,
+) (err error) {
+	return _apptabs_.Build(
+		packageName,
+		allPanelNames, localPanelNames, remotePanelNames,
+		packageDoc,
+		importPrefix,
+		folderPaths,
+	)
+}
+
+// BuildSimplePackage builds a type Simple screen package.
 func BuildSimplePackage(
 	packageName string,
 	panelNames []string,
@@ -54,7 +89,7 @@ func BuildSimplePackage(
 	)
 }
 
-// BuildSimplePackage builds a type Simple screen package.
+// BuildDocTabsPackage builds a type DocTabs screen package.
 func BuildDocTabsPackage(
 	packageName string,
 	allPanelNames, localPanelNames, remotePanelNames []string,
@@ -62,26 +97,9 @@ func BuildDocTabsPackage(
 	importPrefix string,
 	folderPaths *_utils_.FolderPaths,
 ) (err error) {
-	return _tabbar_.Build(
-		allPanelNames, localPanelNames, remotePanelNames,
+	return _doctabs_.Build(
 		packageName,
-		packageDoc,
-		importPrefix,
-		folderPaths,
-	)
-}
-
-// BuildSimplePackage builds a type Simple screen package.
-func BuildAccordionPackage(
-	packageName string,
-	allPanelNames, localPanelNames, remotePanelNames []string,
-	packageDoc string,
-	importPrefix string,
-	folderPaths *_utils_.FolderPaths,
-) (err error) {
-	return _accordion_.Build(
 		allPanelNames, localPanelNames, remotePanelNames,
-		packageName,
 		packageDoc,
 		importPrefix,
 		folderPaths,

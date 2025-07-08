@@ -1,7 +1,12 @@
 package types
 
+type docTabItemContentConsumerTemplateData struct {
+	ImportPrefix string
+}
+
 const (
 	docTabItemContentConsumerFileName = "docTabItemContentConsumer.go"
+
 	docTabItemContentConsumerTemplate = `package types
 
 import (
@@ -9,22 +14,25 @@ import (
 	"fyne.io/fyne/v2/container"
 )
 
-// DocTabItemContentConsumer consumes content from a producer and gives it to a tabItem.
+// DocTabsTabItemContentConsumer consumes content from a producer and gives it to a tabItem.
 // It is implemented by a tab item.
-// DocTabItemContentConsumer implements ContentConsumer.
-// DocTabItemContentConsumer implements UnSpawner.
-type DocTabItemContentConsumer struct {
-	tabbar   *container.DocTabs
-	tabItem  *container.TabItem
-	producer ContentProducer // Panel's content producer
-	spawned  bool
+// DocTabsTabItemContentConsumer implements ContentConsumer.
+// DocTabsTabItemContentConsumer implements UnSpawner.
+type DocTabsTabItemContentConsumer struct {
+	tabbar  *container.DocTabs
+	tabItem *container.TabItem
+
+	// producer makes the content for tabItem.
+	// 1. Tab icon.
+	// 2. Tab label.
+	// 3. Tab content.
+	producer ContentProducer // A panel's content producer or a screen's content producer.
 }
 
-func NewDocTabItemContentConsumer(tabbar *container.DocTabs, tabItem *container.TabItem, spawned bool) (consumer *DocTabItemContentConsumer) {
-	consumer = &DocTabItemContentConsumer{
+func NewDocTabsTabItemContentConsumer(tabbar *container.DocTabs, tabItem *container.TabItem) (consumer *DocTabsTabItemContentConsumer) {
+	consumer = &DocTabsTabItemContentConsumer{
 		tabbar:  tabbar,
 		tabItem: tabItem,
-		spawned: spawned,
 	}
 	return
 }
@@ -33,15 +41,18 @@ func NewDocTabItemContentConsumer(tabbar *container.DocTabs, tabItem *container.
 
 // Show sets the TabItem's content.
 // Show is the implementation of ScreenCanvasWatcher.
-func (consumer *DocTabItemContentConsumer) Show() {
-	consumer.tabItem.Content.Show()
+func (consumer *DocTabsTabItemContentConsumer) Show(isMainThread bool) {
+	if isMainThread {
+		consumer.tabItem.Content.Show()
+	} else {
+		fyne.Do(consumer.tabItem.Content.Show)
+	}
 }
 
 // IsVisible returns if this content is visible in the window.
 // IsVisible is the implementation of ContentConsumer.
-// TODO: fix this.
-func (consumer *DocTabItemContentConsumer) IsVisible() (is bool) {
-	is = true
+func (consumer *DocTabsTabItemContentConsumer) IsVisible() (is bool) {
+	is = consumer.tabItem.Disabled() || (consumer.tabbar.Selected() == consumer.tabItem)
 	return
 }
 
@@ -50,22 +61,26 @@ func (consumer *DocTabItemContentConsumer) IsVisible() (is bool) {
 // 2. Refreshes the tabItem.
 // 3. Refreshes the tab-bar.
 // Refresh is the implementation of ContentConsumer.
-func (consumer *DocTabItemContentConsumer) Refresh() {
+func (consumer *DocTabsTabItemContentConsumer) Refresh(isMainThread bool) {
 	if icon := consumer.producer.Icon(consumer); icon != nil {
 		consumer.tabItem.Icon = icon
 	}
-	if label := consumer.producer.Label(consumer); len(label) > 0 {
-		consumer.tabItem.Text = label
+	if label := consumer.producer.Label(consumer); label != nil {
+		consumer.tabItem.Text = *label
 	}
 	if canvasObject := consumer.producer.CanvasObject(consumer); canvasObject != nil {
 		consumer.tabItem.Content = canvasObject
 	}
-	fyne.Do(consumer.tabbar.Refresh)
+	if isMainThread {
+		consumer.tabbar.Refresh()
+	} else {
+		fyne.Do(func() { consumer.tabbar.Refresh() })
+	}
 }
 
 // Bind binds to the producer and calls the panel or screen's Producer().Bind().
 // Bind is the implementation of ContentConsumer.
-func (consumer *DocTabItemContentConsumer) Bind(producer ContentProducer) {
+func (consumer *DocTabsTabItemContentConsumer) Bind(producer ContentProducer) {
 	if consumer.producer != nil {
 		// Already bound to a producer.
 		return
@@ -77,7 +92,7 @@ func (consumer *DocTabItemContentConsumer) Bind(producer ContentProducer) {
 
 // UnBind calls the producer's UnBind() and then unspawns.
 // UnBind is the implementation of ContentConsumer.
-func (consumer *DocTabItemContentConsumer) UnBind() {
+func (consumer *DocTabsTabItemContentConsumer) UnBind() {
 	if consumer.producer == nil {
 		// Not bound to a producer.
 		return
@@ -90,7 +105,12 @@ func (consumer *DocTabItemContentConsumer) UnBind() {
 
 // IsWindowContentConsumer returns false because this is a tabItem consumer.
 // IsWindowContentConsumer is the implementation of ContentConsumer.
-func (consumer *DocTabItemContentConsumer) IsWindowContentConsumer() (is bool) {
+func (consumer *DocTabsTabItemContentConsumer) IsWindowContentConsumer() (is bool) {
+	return
+}
+
+func (consumer *DocTabsTabItemContentConsumer) CanUnBind() (canUnBind bool) {
+	canUnBind = true
 	return
 }
 `

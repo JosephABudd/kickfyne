@@ -17,21 +17,17 @@ import (
 	_message_ "{{ .ImportPrefix }}/shared/message"
 )
 
-var messageReceivers = make(map[uint64][]Receiver, 20)
+var messageReceivers = make(map[string][]Receiver, 20)
 var Dispatcher = make(chan interface{}, 1024)
 
 type Receiver interface {
 	Receive(msg interface{})
-	ScreenPackage() string
+	ID() string
 }
 
 // AddReceiver adds the receiver to the messages indicated by msgIDs.
-func AddReceiver(receiver Receiver, msgIDs ...uint64) (err error) {
+func AddReceiver(receiver Receiver, msgIDs ...string) (err error) {
 	for _, msgID := range msgIDs {
-		if !_message_.IsValidID(msgID) {
-			err = fmt.Errorf("_message_.AddReceiver: messageID %d, not found", msgID)
-			return
-		}
 		if err = addReceiver(receiver, msgID); err != nil {
 			return
 		}
@@ -40,7 +36,7 @@ func AddReceiver(receiver Receiver, msgIDs ...uint64) (err error) {
 }
 
 // RemoveReceiver removes the receiver from the message indicated by msgID.
-func RemoveReceiver(msgID uint64, receiver Receiver) {
+func RemoveReceiver(msgID string, receiver Receiver) {
 	if _, found := messageReceivers[msgID]; !found {
 		return
 	}
@@ -54,7 +50,7 @@ func UnSpawnReceiver(receiver Receiver) {
 	}
 }
 
-func removeReceiver(receiver Receiver, msgID uint64) {
+func removeReceiver(receiver Receiver, msgID string) {
 	receivers := messageReceivers[msgID]
 	for i, l := range receivers {
 		if l == receiver {
@@ -67,7 +63,7 @@ func removeReceiver(receiver Receiver, msgID uint64) {
 	}
 }
 
-func addReceiver(receiver Receiver, msgID uint64) (err error) {
+func addReceiver(receiver Receiver, msgID string) (err error) {
 	var receivers []Receiver
 	var found bool
 	if receivers, found = messageReceivers[msgID]; !found {
@@ -76,7 +72,7 @@ func addReceiver(receiver Receiver, msgID uint64) (err error) {
 	// Don't allow for duplicates.
 	for _, l := range receivers {
 		if l == receiver {
-			err = fmt.Errorf("The screen package %q is already receiving to %d.", receiver.ScreenPackage(), msgID)
+			err = fmt.Errorf("The screen package %q is already receiving to %q.", receiver.ID(), msgID)
 			return
 		}
 	}

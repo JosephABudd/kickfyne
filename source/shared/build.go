@@ -8,6 +8,7 @@ import (
 	_metadata_ "github.com/JosephABudd/kickfyne/source/shared/metadata"
 	_paths_ "github.com/JosephABudd/kickfyne/source/shared/paths"
 	_store_ "github.com/JosephABudd/kickfyne/source/shared/store"
+	_thread_ "github.com/JosephABudd/kickfyne/source/shared/thread"
 	_utils_ "github.com/JosephABudd/kickfyne/source/utils"
 )
 
@@ -28,9 +29,12 @@ func CreateFramework(
 		}
 	}()
 
+	var path string
+	var data any
+
 	// shared/shared.go
-	path := filepath.Join(folderPaths.Shared, sharedFileName)
-	data := sharedTemplateData{
+	path = filepath.Join(folderPaths.Shared, sharedFileName)
+	data = sharedTemplateData{
 		ImportPrefix: importPrefix,
 	}
 	if err = _utils_.ProcessTemplate(sharedFileName, path, sharedTemplate, data); err != nil {
@@ -54,6 +58,11 @@ func CreateFramework(
 
 	// shared/store/
 	if err = _store_.CreateFramework(importPrefix, folderPaths); err != nil {
+		return
+	}
+
+	// shared/thread/
+	if err = _thread_.CreateFramework(importPrefix, folderPaths); err != nil {
 		return
 	}
 

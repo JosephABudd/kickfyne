@@ -22,7 +22,6 @@ type consumerStat struct {
 }
 
 type ContentProducer struct {
-	spawned      bool
 	canvasObject fyne.CanvasObject
 	title        string
 	label        string
@@ -30,9 +29,8 @@ type ContentProducer struct {
 	consumers    map[_types_.ContentConsumer]*consumerStat
 }
 
-func NewContentProducer(spawned bool, consumer _types_.ContentConsumer) (producer *ContentProducer) {
+func NewContentProducer(consumer _types_.ContentConsumer) (producer *ContentProducer) {
 	producer = &ContentProducer{
-		spawned:   spawned,
 		consumers: make(map[_types_.ContentConsumer]*consumerStat),
 	}
 	consumer.Bind(producer)
@@ -49,9 +47,9 @@ func (producer *ContentProducer) HasWindowConsumer() (has bool) {
 	return
 }
 
-func (producer *ContentProducer) Refresh() {
+func (producer *ContentProducer) Refresh(isMainThread bool) {
 	for consumer := range producer.consumers {
-		consumer.Refresh()
+		consumer.Refresh(isMainThread)
 	}
 }
 
@@ -84,6 +82,11 @@ func (producer *ContentProducer) SetLabel(label string) {
 }
 
 // Implementations of _types_.ContentProducer.
+
+func (producer *ContentProducer) CanvasObjectForce(consumer _types_.ContentConsumer) (canvasObject fyne.CanvasObject) {
+	canvasObject = producer.canvasObject
+	return
+}
 
 func (producer *ContentProducer) CanvasObject(consumer _types_.ContentConsumer) (canvasObject fyne.CanvasObject) {
 	if stats, found := producer.consumers[consumer]; found {

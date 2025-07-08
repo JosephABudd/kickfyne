@@ -10,9 +10,9 @@ var dyneAppTOMLTemplate = `# Website = "{{ .WebSiteURL }}"
 
 [Details]
 # ID is the unique ID of this application, used by many distribution platforms.
-ID = "com.example.okp"
+ID = "{{ .AppID }}"
 # Name is the human friendly name of this app.
-Name = "okp"
+Name = "{{ .AppName }}"
 # Version represents the version of this application, normally following semantic versioning.
 Version = "0.1.0"
 # Build is the build number of this app, some times appended to the version number.

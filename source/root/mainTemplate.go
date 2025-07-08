@@ -28,6 +28,7 @@ import (
 	_frontend_ "{{ .ImportPrefix }}/frontend"
 	_shared_ "{{ .ImportPrefix }}/shared"
 	_message_ "{{ .ImportPrefix }}/shared/message"
+	_thread_ "{{ .ImportPrefix }}/shared/thread"
 )
 
 const (
@@ -56,7 +57,8 @@ func main() {
 	os.Setenv("CWT_TESTING", envFalse)
 
 	a := app.New()
-	w := a.NewWindow("okp")
+	appName := a.Metadata().Name
+	w := a.NewWindow(appName)
 
 	// Cancel.
 	ctx, ctxCancel := context.WithCancel(context.Background())
@@ -65,6 +67,11 @@ func main() {
 	)
 	errCh := make(chan error, 2)
 	go monitor(w, ctx, errCh)
+
+	// Set the main thread ID.
+	if exitError = _thread_.SetMainThreadID(); exitError != nil {
+		return
+	}
 
 	// Start shared.
 	if exitError = _shared_.Start(ctx, ctxCancel); exitError != nil {

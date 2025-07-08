@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	InitMessageName          = "Init"
-	chansMessageName         = "Chans"
-	initMessageNameInvalidF  = `The message name %q is too similar to message name "Init" which belongs to the framework, is used for the application initialization and can not be removed.`
-	chansMessageNameInvalidF = `The message name %q is too similar to the file name "chans.go" which belongs to the framework, defines message channels for the application and can not be removed.`
-	initMessageNameInvalid   = `The message name "Init" belongs to the framework, is used for the application initialization and can not be removed.`
-	chansMessageNameInvalid  = `The message name "Chans" is too much like the file name "chans.go" which belongs to the framework, defines message channels for the application and can not be removed.`
-	spawnMessageNameInvalidF = `The %[1]q message belongs to the %[2]s screen. It will only be removed if you remove the %[2]s screen.`
+	InitMessageName                = "Init"
+	chansMessageName               = "Chans"
+	initMessageNameInvalidF        = `The message name %q is too similar to message name "Init" which belongs to the framework, is used for the application initialization and can not be removed.`
+	chansMessageNameInvalidF       = `The message name %q is too similar to the file name "chans.go" which belongs to the framework, defines message channels for the application and can not be removed.`
+	initMessageNameInvalid         = `The message name "Init" belongs to the framework, is used for the application initialization and can not be removed.`
+	chansMessageNameInvalid        = `The message name "Chans" is too much like the file name "chans.go" which belongs to the framework, defines message channels for the application and can not be removed.`
+	spawnMessageNameInvalidRemoveF = `The %[1]q message belongs to the %[2]s screen. It will only be removed if you remove the %[2]s screen.`
+	spawnMessageNameInvalidAddF    = `The message name %[1]q is too similar to a spawn message for a %[2]s AppTabs screen.`
 )
 
 // UserMessageNames returns each of the user added message names.
@@ -64,7 +65,7 @@ func AllMessageNames(folderPaths *FolderPaths) (names []string, err error) {
 	lExt := len(GoFileExt)
 	for _, dirEntry := range dirEntrys {
 		if dirEntry.IsDir() {
-			// Ignore directories. (shouldn't be any)
+			// Ignore directories.
 			// Only want .go files.
 			continue
 		}
@@ -114,7 +115,7 @@ func ValidateNewMessageName(
 	for _, name := range messageNames {
 		if strings.ToLower(name) == lc {
 			isValid = false
-			userMessage = fmt.Sprintf("The message name %q is too smilar to the message name %q.", messageName, name)
+			userMessage = fmt.Sprintf("The message name %q is too similar to the message name %q.", messageName, name)
 			return
 		}
 	}
@@ -141,29 +142,6 @@ func ValidateRemoveCurrentMessageName(
 	case messageName == chansMessageName:
 		userMessage = chansMessageNameInvalid
 		return
-	case strings.HasPrefix(messageName, "spawn"):
-		// This looks like is a doctab's builtin "spawn" message.
-		// Remove the prefix "spawn" or "spawned" if there is one.
-		screenName := strings.TrimPrefix(messageName, "spawn")
-		screenName = strings.TrimPrefix(screenName, "ed")
-		if strings.HasSuffix(screenName, "Tab") {
-			screenName = strings.TrimSuffix(screenName, "Tab")
-			screenName = strings.TrimSuffix(screenName, "bar")
-			var isCurrent bool
-			if isCurrent, err = IsCurrentScreenName(screenName, folderPaths); err != nil {
-				return
-			}
-			if isCurrent {
-				// The user is attempting to remove a docTab's builtin message.
-				userMessage = fmt.Sprintf(spawnMessageNameInvalidF, userMessage, screenName)
-			} else {
-				// Not a docTab's builtin message.
-				// It starts with "spawn" so it won't be valid.
-				if isValid, userMessage = validateMessageName(messageName); !isValid {
-					return
-				}
-			}
-		}
 	default:
 		if isValid, userMessage = validateMessageName(messageName); !isValid {
 			return
@@ -174,16 +152,15 @@ func ValidateRemoveCurrentMessageName(
 	if messageNames, err = UserMessageNames(folderPaths); err != nil {
 		return
 	}
-	isValid = slices.Contains(messageNames, messageName)
-	if !isValid {
+	if isValid = slices.Contains(messageNames, messageName); !isValid {
 		userMessage = fmt.Sprintf("The message name %q is not being used.", messageName)
 	}
 
 	return
 }
 
-// ValidateCurrentMessageName returns an error if the message name is not valid.
-func ValidateCurrentMessageName(
+// ValidateAddCurrentMessageName returns an error if the message name is not valid.
+func ValidateAddCurrentMessageName(
 	messageName string,
 	folderPaths *FolderPaths,
 ) (isValid bool, userMessage string, err error) {
@@ -211,12 +188,24 @@ func ValidateCurrentMessageName(
 	if messageNames, err = UserMessageNames(folderPaths); err != nil {
 		return
 	}
-	for _, name := range messageNames {
-		if name == messageName {
-			return
-		}
+	if slices.Contains(messageNames, messageName) {
+		return
 	}
 	userMessage = fmt.Sprintf("The message name %q is not being used.", messageName)
 	isValid = false
+	return
+}
+
+func BackendTXRXFolderNames(folderPaths *FolderPaths) (folderNames []string, err error) {
+	var allFolderNames []string
+	if allFolderNames, err = FolderNames(folderPaths.BackendTXRX); err != nil {
+		return
+	}
+	folderNames = make([]string, 0, len(allFolderNames))
+	for _, folderName := range allFolderNames {
+		if folderName != folderNameAPI {
+			folderNames = append(folderNames, folderName)
+		}
+	}
 	return
 }

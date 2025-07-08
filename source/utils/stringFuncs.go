@@ -122,6 +122,22 @@ func validateScreenPanelName(name string) (isValid bool, userMessage string) {
 	return
 }
 
+// validateScreenTabName returns if the screen tab name is valid.
+// userMessage contains the error message for the user.
+// Param name is the user created name.
+func validateScreenTabName(name string) (isValid bool, userMessage string) {
+	isValid, userMessage = validateCamelCaseName(name, "tab")
+	return
+}
+
+// validateScreenAccordionItemName returns if the screen accordionItem name is valid.
+// userMessage contains the error message for the user.
+// Param name is the user created name.
+func validateScreenAccordionItemName(name string) (isValid bool, userMessage string) {
+	isValid, userMessage = validateCamelCaseName(name, "accordionItem")
+	return
+}
+
 // validateScreenName returns if the screen name is valid.
 // userMessage contains the error message for the user.
 // Param name is the user created name.
@@ -138,7 +154,7 @@ func validateCamelCaseName(name, nameType string) (isValid bool, userMessage str
 
 	defer func() {
 		if !isValid {
-			userMessage = fmt.Sprintf("A %s name must be TitleCase.", nameType)
+			userMessage = fmt.Sprintf("The %s name %q must be TitleCase.", nameType, name)
 		}
 	}()
 
@@ -158,38 +174,6 @@ func validateCamelCaseName(name, nameType string) (isValid bool, userMessage str
 		if !isValid {
 			return
 		}
-	}
-	return
-}
-
-// validateName returns if the name is valid.
-// userMessage contains the error message for the user.
-// Param name is the user created name.
-// Param nameType is what the name is created for. ("record", "panel")
-func validateName(name, nameType string) (isValid bool, userMessage string) {
-	lines := make([]string, 0, 2)
-	var msg string
-	isValid = true
-	if strings.ContainsAny(name, asciiSpaces) {
-		msg = fmt.Sprintf("A %s name must not contain any white space.", nameType)
-		lines = append(lines, msg)
-		isValid = false
-	}
-	if strings.ContainsAny(name, puncts) {
-		msg = fmt.Sprintf("A %s name must not contain any punctuation.", nameType)
-		lines = append(lines, msg)
-		isValid = false
-	}
-	lcName := strings.ToLower(name)
-	for _, inValidName := range inValidNames {
-		if inValidName == lcName {
-			msg = fmt.Sprintf("The %s name %q can not be used.", nameType, name)
-			lines = append(lines, msg)
-			isValid = false
-		}
-	}
-	if !isValid {
-		userMessage = strings.Join(lines, "\n")
 	}
 	return
 }

@@ -4,4 +4,18 @@ after running panel add or panel remove "go mod init"
 
 kickfyne screen remove NotUsedScreenName says already removed.
 
-panel state in state folder.
+New DocTabs callback
+WCC callback func(windowContentConsumer *_types_.WindowContentConsumer)
+
+Remove a Tabbar from the back-end.
+Frontend must:
+    If tabbar is in main menu, don't remove the tabbar.
+    If tabbar is content for a tab item, remove that tab item.
+    If tabbar is content for an accordion item, remove that accordion item.
+
+Request from front-end:
+* The back-end must perform.
+
+Request from back-end:
+* The front-end must try to perform.
+* The front-end must return result so the back-end can undo.

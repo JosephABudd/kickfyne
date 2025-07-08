@@ -1,81 +1,108 @@
 package panels
 
 import (
-	_utils_ "github.com/JosephABudd/kickfyne/source/utils"
+	"github.com/JosephABudd/kickfyne/source/utils"
 )
 
 type PanelTemplateData struct {
 	PanelName    string
 	PackageName  string
 	ImportPrefix string
-	Funcs        _utils_.Funcs
-}
-
-func PanelFileName(panelName string) (panelFileName string) {
-	return panelName + ".go"
+	Funcs        utils.Funcs
 }
 
 const (
-	PanelTemplate = `package {{ .PackageName }}
+	PanelFileNameSuffix = "Panel.go"
+
+	PanelTemplate = `package panels
 
 import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 
-	_content_ "{{ .ImportPrefix }}/frontend/gui/screens/simple/{{ .PackageName }}/panels/content"
-	_misc_ "{{ .ImportPrefix }}/frontend/gui/screens/simple/{{ .PackageName }}/misc"
+	_misc_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/misc"
+	_content_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/panels/{{ .PanelName }}Panel"
+	_types_ "{{ .ImportPrefix }}/frontend/types"
 )
 
-// {{ .PanelName }}Panel is a panel.
-// It's content is at content/{{ .PanelName }}Content.go
-// KICKFYNE TODO: Correct this panel's doc comment.
+// {{ .PanelName }}Panel is a {{ .PanelName }} panel.
+// It's content is at {{ .PanelName }}Panel/content.go.
+// It's content's state is at {{ .PanelName }}Panel/state.go.
 type {{ .PanelName }}Panel struct {
-	content *_content_.{{ .PanelName }}PanelContent
-	screen  *_misc_.ScreenComponents
+	content       *_content_.Content
+	state         *_content_.State
+	messenger     *_content_.Messenger
+	accordionItem *widget.AccordionItem
+	screen        *_misc_.Miscellaneous
 }
 
 // New{{ .PanelName }}Panel initializes this panel.
 // Returns the panel and the error.
-func New{{ .PanelName }}Panel(screen *_misc_.ScreenComponents) (panel *{{ .PanelName }}Panel, err error) {
+func New{{ .PanelName }}Panel(screen *_misc_.Miscellaneous, accordionItemContentConsumer *_types_.AccordionItemContentConsumer, accordionItem *widget.AccordionItem) (panel *{{ .PanelName }}Panel, err error) {
 
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("{{ .PackageName }}.new{{ .PanelName }}: %w", err)
+			err = fmt.Errorf("{{ .PanelName }}Panel.New{{ .PanelName }}Panel: %w", err)
 		}
 	}()
 
 	panel = &{{ .PanelName }}Panel{
-		screen: screen,
+		screen:        screen,
+		accordionItem: accordionItem,
 	}
-	if panel.content, err = _content_.New{{ .PanelName }}PanelContent(screen); err != nil {
-		return error
+	if panel.content, err = _content_.NewContent(accordionItemContentConsumer, screen, accordionItem, panel); err != nil {
+		return
 	}
+	if panel.state, err = _content_.NewState(
+		panel.content,
+		screen.ScreenID,
+	); err != nil {
+		return
+	}
+	if panel.messenger, err = _content_.NewMessenger(
+		panel.screen,
+		panel.state,
+	); err != nil {
+		return
+	}
+
 	return
 }
 
-// SetState sets the state of this panel's content.
-func (panel *{{ .PanelName }}Panel) SetState(setters ...Content.{{ .PanelName }}PanelContentStateSetter) {
-	panel.content.Set(setters)
-}
-
-// GetState gets a copy the state of this panel's content.
-func (panel *{{ .PanelName }}Panel) GetState(state *{{ .PanelName }}PanelContentState) {
-	state = panel.content.Get()
+// ID returns the panel's id.
+func (panel *{{ .PanelName }}Panel) ID() (id string) {
+	getters := panel.state.Get().(_content_.Getters)
+	id = getters.ID()
 	return
 }
 
-// Show shows this panel and hides the others.
-func (panel *{{ .PanelName }}Panel) Show() {
-	panel.screen.canvasObjectProvider.UpdateCanvasObject(panel.Content())
-}
+// Show doesn't do anything becuase this panel is always shown by it's accordionItem.
+func (panel *{{ .PanelName }}Panel) Show(isMainThread bool) {}
 
-// Content returns the panel's content.
-func (panel *{{ .PanelName }}Panel) Content() (content fyne.CanvasObject) {
-	content = panel.content.Content()
+// Producer returns the panel's producer.
+// func (panel *{{ .PanelName }}Panel) Producer() (producer *_producer_.ContentProducer) {
+func (panel *{{ .PanelName }}Panel) Producer() (producer _types_.ContentProducer) {
+	producer = panel.content.Producer()
 	return
 }
 
+// CanvasObject returns the panel's content.
+func (panel *{{ .PanelName }}Panel) CanvasObject() (canvasObject fyne.CanvasObject) {
+	canvasObject = panel.content.CanvasObject()
+	return
+}
+
+// Required cleanup after unbinding.
+func (panel *{{ .PanelName }}Panel) UnBindCleanUP() {
+	panel.messenger.StopReceiving()
+}
+
+// State returns the panel's state.
+func (panel *{{ .PanelName }}Panel) State() (state _types_.Stater) {
+	state = panel.state
+	return
+}
 `
 )

@@ -11,6 +11,7 @@ const (
 	verbList         = "list"
 	verbAddSimple    = "add-simple"
 	verbAddDocTabs   = "add-doctabs"
+	verbAddAppTabs   = "add-apptabs"
 	verbAddAccordion = "add-accordion"
 )
 

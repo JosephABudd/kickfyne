@@ -6,10 +6,9 @@ const (
 
 var initTemplate = `package message
 
-var InitID = NextID()
+var InitID = "Init"
 
 type Init struct {
-	id           uint64
 	name         string
 	Message      string // to front
 	Error        bool   // to front
@@ -19,24 +18,21 @@ type Init struct {
 
 // NewInit constructs a new NewInit message.
 func NewInit() (msg *Init) {
-	msg = &Init{
-		id:   InitID,
-		name: "Init",
-	}
+	msg = &Init{}
 	return
 }
 
 // Init implements the MSGer interface with ID and AsInterface.
 
 // ID returns the message's id.
-func (msg *Init) ID() (id uint64) {
-	id = msg.id
+func (msg *Init) ID() (id string) {
+	id = InitID
 	return
 }
 
 // Name returns the message's name.
 func (msg *Init) Name() (name string) {
-	name = msg.name
+	name = InitID
 	return
 }
 

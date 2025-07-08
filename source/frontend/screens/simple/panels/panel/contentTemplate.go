@@ -1,4 +1,4 @@
-package screens
+package panel
 
 import (
 	_utils_ "github.com/JosephABudd/kickfyne/source/utils"
@@ -26,6 +26,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	_misc_ "{{ .ImportPrefix }}/frontend/screens/{{ .PackageName }}/misc"
+	_thread_ "{{ .ImportPrefix }}/shared/thread"
 )
 
 // Content is the content for the {{ .PanelName }} panel.
@@ -57,12 +58,18 @@ func NewContent(screen *_misc_.Miscellaneous) (panelContent *Content, err error)
 	}
 
 	// Layout the components.
+	isMainThread := _thread_.IsMainThread()
 	panelContent.content = container.NewVBox(
 		panelContent.heading,
 		panelContent.description,
 {{- range $panelName := .LocalPanelNames }}
  {{- if ne $panelName $DOT.PanelName }}
-		widget.NewButton("Switch to the {{ $panelName }} Panel", panelContent.switchTo{{ $panelName }}),
+		widget.NewButton(
+			"Switch to the {{ $panelName }} Panel",
+			func() {
+				panelContent.switchTo{{ $panelName }}(isMainThread);
+			},
+		),
  {{- end }}
 {{- end }}
 	)
@@ -78,8 +85,8 @@ func (panelContent *Content) CanvasObject() (canvasObject fyne.CanvasObject) {
 {{- range $panelName := .LocalPanelNames }}
  {{- if ne $panelName $DOT.PanelName }}
 
-func (panelContent *Content) switchTo{{ $panelName }}() {
-	panelContent.screen.Panelers.{{ $panelName }}.Show()
+func (panelContent *Content) switchTo{{ $panelName }}(isMainThread bool) {
+	panelContent.screen.Panelers.{{ $panelName }}.Show(isMainThread)
 }
  {{- end }}
 {{- end }}

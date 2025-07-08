@@ -12,11 +12,6 @@ const (
 	puncts      = "`~!@#$%^&*()_-+={[]}|\\:;\"'<>,.?/"
 )
 
-// inValidNames must be all lowercase.
-var inValidNames = []string{
-	"package",
-}
-
 type Funcs struct {
 	LowerCase      func(string) string
 	UpperCase      func(string) string

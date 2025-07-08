@@ -17,7 +17,10 @@ const (
 	LayoutFileName      = "layout.go"
 	MessengerFileName   = "messenger.go"
 	PanelsFileName      = "panels.go"
+	PanelsStateFileName = "panelsState.go"
 	ComponentsFileName  = "components.go"
+	KeepFileName        = ".gitkeep"
+	IDsFileName         = "ids.go"
 
 	ralativeFilePathSuffix = ":1:1"
 )
@@ -48,14 +51,21 @@ func PanelContentFolderName(panelName string) (fileName string) {
 // PanelContentFilePath returns the relative path for a panel content file.
 func PanelContentFilePath(screenPackageName, panelName string, folderPaths *FolderPaths) (filePath string) {
 	contentFolderName := PanelContentFolderName(panelName)
-	filePath = path.Join(folderPaths.FrontendScreens, screenPackageName, contentFolderName, ContentFileName)
+	filePath = path.Join(folderPaths.FrontendScreens, screenPackageName, FolderNamePanels, contentFolderName, ContentFileName)
 	return
 }
 
 // PanelStateFilePath returns the relative path for a panel's content state file.
 func PanelStateFilePath(screenPackageName, panelName string, folderPaths *FolderPaths) (filePath string) {
 	contentFolderName := PanelContentFolderName(panelName)
-	filePath = path.Join(folderPaths.FrontendScreens, screenPackageName, contentFolderName, StateFileName)
+	filePath = path.Join(folderPaths.FrontendScreens, screenPackageName, FolderNamePanels, contentFolderName, StateFileName)
+	return
+}
+
+// PanelMessengerFilePath returns the relative path for a panel's content messenger file.
+func PanelMessengerFilePath(screenPackageName, panelName string, folderPaths *FolderPaths) (filePath string) {
+	contentFolderName := PanelContentFolderName(panelName)
+	filePath = path.Join(folderPaths.FrontendScreens, screenPackageName, FolderNamePanels, contentFolderName, MessengerFileName)
 	return
 }
 

@@ -17,7 +17,7 @@ import (
 
 	toml "github.com/pelletier/go-toml"
 
-	_paths_ "example.com/okp/shared/paths"
+	_paths_ "{{ .ImportPrefix }}/shared/paths"
 )
 
 var appMetaData fyne.AppMetadata

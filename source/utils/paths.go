@@ -7,31 +7,37 @@ import (
 )
 
 const (
-	folderNameBackend       = "backend"
-	FolderNameContent       = "content"
-	folderNameFrontend      = "frontend"
-	FolderNameLandingScreen = "landingscreen"
-	FolderNameLayout        = "layout"
-	folderNameMainMenu      = "mainmenu"
-	folderNameMessage       = "message"
-	FolderNameMisc          = "misc"
-	FolderNamePanelers      = "panelers"
-	FolderNamePanels        = "panels"
-	FolderNameProducer      = "producer"
-	folderNameRecord        = "record"
-	FolderNameScreens       = "screens"
-	folderNameScreenMap     = "screenmap"
-	folderNameShared        = "shared"
-	folderNameStore         = "store"
-	folderNameStorer        = "storer"
-	folderNameStoring       = "storing"
-	FolderNameTXRX          = "txrx"
-	folderNameTXRXChans     = "txrxchans"
-	folderNameTypes         = "types"
+	folderNameAPI            = "api"
+	FolderNameAccordionItems = "accordionitems"
+	folderNameBackend        = "backend"
+	FolderNameContent        = "content"
+	folderNameFrontend       = "frontend"
+	FolderNameLandingScreen  = "landingscreen"
+	FolderNameLayout         = "layout"
+	folderNameMainMenu       = "mainmenu"
+	folderNameMessage        = "message"
+	FolderNameMisc           = "misc"
+	FolderNamePanelers       = "panelers"
+	FolderNamePanels         = "panels"
+	FolderNameProducer       = "producer"
+	folderNameRecord         = "record"
+	FolderNameScreens        = "screens"
+	folderNameScreenMap      = "screenmap"
+	folderNameShared         = "shared"
+	folderNameStore          = "store"
+	folderNameStorer         = "storer"
+	folderNameStoring        = "storing"
+	FolderNameTabs           = "tabs"
+	folderNameThread         = "thread"
+	FolderNameTXRX           = "txrx"
+	folderNameTXRXChans      = "txrxchans"
+	folderNameTypes          = "types"
+	FolderNameDocTabs        = "doctabs"
 )
 
 var (
-	backendTXRX = filepath.Join(folderNameBackend, FolderNameTXRX)
+	backendTXRX    = filepath.Join(folderNameBackend, FolderNameTXRX)
+	backendTXRXAPI = filepath.Join(folderNameBackend, FolderNameTXRX, folderNameAPI)
 
 	frontendMainMenu         = filepath.Join(folderNameFrontend, folderNameMainMenu)
 	frontendScreens          = filepath.Join(folderNameFrontend, FolderNameScreens)
@@ -49,12 +55,13 @@ var (
 	sharedStoreRecord  = filepath.Join(sharedStore, folderNameRecord)
 	sharedStoreStorer  = filepath.Join(sharedStore, folderNameStorer)
 	sharedStoreStoring = filepath.Join(sharedStore, folderNameStoring)
+	sharedThread       = filepath.Join(folderNameShared, folderNameThread)
 )
 
 type FolderPaths struct {
-	App         string
-	Backend     string
-	BackendTXRX string
+	App                         string
+	Backend                     string
+	BackendTXRX, BackendTXRXAPI string
 
 	Frontend                                                          string
 	FrontendMainMenu                                                  string
@@ -68,6 +75,7 @@ type FolderPaths struct {
 	SharedMetaData                                                        string
 	SharedPaths                                                           string
 	SharedStore, SharedStoreRecord, SharedStoreStorer, SharedStoreStoring string
+	SharedThread                                                          string
 }
 
 // BuildFolderPaths constructs paths and then makes them on the disk.
@@ -82,8 +90,9 @@ func BuildFolderPaths(rootPath string) (folderPaths *FolderPaths, err error) {
 	folderPaths = &FolderPaths{
 		App: rootPath,
 
-		Backend:     filepath.Join(rootPath, folderNameBackend),
-		BackendTXRX: filepath.Join(rootPath, backendTXRX),
+		Backend:        filepath.Join(rootPath, folderNameBackend),
+		BackendTXRX:    filepath.Join(rootPath, backendTXRX),
+		BackendTXRXAPI: filepath.Join(rootPath, backendTXRXAPI),
 
 		Frontend:                 filepath.Join(rootPath, folderNameFrontend),
 		FrontendMainMenu:         filepath.Join(rootPath, frontendMainMenu),
@@ -103,6 +112,7 @@ func BuildFolderPaths(rootPath string) (folderPaths *FolderPaths, err error) {
 		SharedStoreRecord:  filepath.Join(rootPath, sharedStoreRecord),
 		SharedStoreStorer:  filepath.Join(rootPath, sharedStoreStorer),
 		SharedStoreStoring: filepath.Join(rootPath, sharedStoreStoring),
+		SharedThread:       filepath.Join(rootPath, sharedThread),
 	}
 	err = buildFolderPaths(folderPaths)
 	return
@@ -144,6 +154,9 @@ func buildFolderPaths(folderPaths *FolderPaths) (err error) {
 		return
 	}
 	if err = os.Mkdir(folderPaths.BackendTXRX, DMode); err != nil {
+		return
+	}
+	if err = os.Mkdir(folderPaths.BackendTXRXAPI, DMode); err != nil {
 		return
 	}
 
@@ -199,6 +212,9 @@ func buildFolderPaths(folderPaths *FolderPaths) (err error) {
 		return
 	}
 	if err = os.Mkdir(folderPaths.SharedStoreStoring, DMode); err != nil {
+		return
+	}
+	if err = os.Mkdir(folderPaths.SharedThread, DMode); err != nil {
 		return
 	}
 	return

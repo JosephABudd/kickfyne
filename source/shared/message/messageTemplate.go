@@ -1,20 +1,18 @@
 package message
 
 type messageTemplateData struct {
-	MessageName string
+	MessageStructName string
 }
 
 var messageTemplate = `package message
 
-var {{ .MessageName }}ID = NextID()
+var {{ .MessageStructName }}ID = "{{ .MessageStructName }}"
 
-type {{ .MessageName }} struct {
-	id          uint64
-	name        string
+type {{ .MessageStructName }} struct {
 	MessengerID string // Set by the sender.
 
 	/* KICKFYNE TODO:
-	Complete this {{ .MessageName }} struct definition.
+	Complete this {{ .MessageStructName }} struct definition.
 	Add the members that you want this message to have.
 	*/
 
@@ -23,42 +21,40 @@ type {{ .MessageName }} struct {
 	ErrorMessage string // Set by the receiver in reply.
 }
 
-// New{{ .MessageName }} returns a *{{ .MessageName }} message.
-func New{{ .MessageName }}(messengerID string) (msg *{{ .MessageName }}) {
-	msg = &{{ .MessageName }}{
-		id:          {{ .MessageName }}ID,
-		name:        "{{ .MessageName }}",
+// New{{ .MessageStructName }} returns a *{{ .MessageStructName }} message.
+func New{{ .MessageStructName }}(messengerID string) (msg *{{ .MessageStructName }}) {
+	msg = &{{ .MessageStructName }}{
 		MessengerID: messengerID,
 
 		/* KICKFYNE TODO:
-		Complete New{{ .MessageName }} as needed.
+		Complete New{{ .MessageStructName }} as needed.
 		*/
 	}
 	return
 }
 
-// {{ .MessageName }} implements the MSGer interface with ID and AsInterface and FatalError.
+// {{ .MessageStructName }} implements the MSGer interface with ID and AsInterface and FatalError.
 
 // ID returns the message's id
-func (msg *{{ .MessageName }}) ID() (id uint64) {
-	id = msg.id
+func (msg *{{ .MessageStructName }}) ID() (id string) {
+	id = {{ .MessageStructName }}ID
 	return
 }
 
 // Name returns the message's Name.
-func (msg *{{ .MessageName }}) Name() (name string) {
-	name = msg.name
+func (msg *{{ .MessageStructName }}) Name() (name string) {
+	name = {{ .MessageStructName }}ID
 	return
 }
 
 // AsInterface returns the message as an any.
-func (msg *{{ .MessageName }}) AsInterface() (m any) {
+func (msg *{{ .MessageStructName }}) AsInterface() (m any) {
 	m = msg
 	return
 }
 
 // FatalError return if there was a fatal error and it's message.
-func (msg *{{ .MessageName }}) FatalError() (fatal bool, message, messengerID string) {
+func (msg *{{ .MessageStructName }}) FatalError() (fatal bool, message, messengerID string) {
 	fatal = msg.Fatal
 	message = msg.ErrorMessage
 	messengerID = msg.MessengerID
